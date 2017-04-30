@@ -43,6 +43,7 @@ public class Main
     public static void main(String[] args) throws Exception
     {
 /* */
+/*
         args = new String[]{
                  "-debug",
 //                 "-skip",
@@ -54,6 +55,7 @@ public class Main
 //                    "onlinedebug\\testcases\\local\\LocalArrayDynamicIndex.xml"
                     "xryusha\\onlinedebug\\testcases\\actions\\ReturnOnException.xml"
         };
+*/
 
 
         if ( args == null || args.length == 0 ) {
