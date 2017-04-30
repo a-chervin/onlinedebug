@@ -1,0 +1,15 @@
+<configuration>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.nested.FromStaticInner" line="36" fastFailOnMissing="false"/>
+        <print location="both">  <!-- expected: arg:0, ii:0, st:"vv-" -->
+            <params>
+			    <const value="st_innerInt: "/>
+				<ref var="st_innerInt"/>
+			    <const value="   st_innerStaticInt: "/>
+				<ref var="st_innerStaticInt"/>
+			    <const value="   encloser.statCounter: "/>
+				<ref var="statCounter"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

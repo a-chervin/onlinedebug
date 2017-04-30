@@ -1,0 +1,1 @@
+stop-2. ((v1==2 and v1 less v2 )||(v1==7  and v2==5))

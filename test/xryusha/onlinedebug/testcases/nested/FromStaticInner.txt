@@ -1,0 +1,1 @@
+st_innerInt: 8   st_innerStaticInt: 8   encloser.statCounter: 0

@@ -1,0 +1,11 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<entry>
+		<methodExit method="f"
+					class="xryusha.onlinedebug.testcases.specialvalues.ReturnValue"/>
+		<print location="both">
+			<params>
+				<returnValue/>
+			</params>
+		</print>
+	</entry>
+</configuration>

@@ -1,0 +1,45 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.MethodBreakpoint" line="26"/>
+        <print location="both">
+            <params>
+                <ref var="counter"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <methodExit method="f"
+                     class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.MethodBreakpoint">
+            <params>
+                <arg class="int"/>
+                <arg class="java.lang.String"/>
+            </params>
+        </methodExit>
+        <assign>
+            <ref var="counter"/>
+            <value><const value="48"/></value>
+        </assign>
+        <print location="both">
+            <params>
+                <const value="return value: "/>
+                <returnValue/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.MethodBreakpoint" line="28"/>
+        <print location="both">
+            <params>
+                <ref var="counter"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.MethodBreakpoint" line="31"/>
+        <print location="both">
+            <params>
+                <ref var="counter"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

@@ -1,0 +1,1 @@
+method.val: 6   method.arg: 9   encloser.counter: 4   encloser.statCounter: 5

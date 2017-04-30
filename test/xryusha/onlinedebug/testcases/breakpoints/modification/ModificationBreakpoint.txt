@@ -1,0 +1,4 @@
+ii=0: null->B
+ii=2: B->B1
+ii=3: null->B
+ii=4: B->B2

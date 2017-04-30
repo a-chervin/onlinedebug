@@ -1,0 +1,2 @@
+t1.inst_ii: dotted:1 chained:1   t1.inst_t2.inst_ii: dotted:2 chained:2
+t1.inst_ii: dotted:100 chained:100   t1.inst_t2.inst_ii: dotted:200 chained:200

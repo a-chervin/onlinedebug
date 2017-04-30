@@ -1,0 +1,36 @@
+<configuration>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.nested.NestedCallChainWithArg" line="24"/>
+        <print location="both">
+            <params>
+			    <const value="t1.inst_t2.getInst_t2(0): "/>
+				<chain>
+				   <call method="getT1"/>
+				   <call method="getInst_t2WithAdd">
+				      <params>
+					     <const value="0"/>
+					  </params>
+				   </call>
+				   <ref var="inst_ii"/>
+				</chain>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.nested.NestedCallChainWithArg" line="25"/>
+        <print location="both">
+            <params>
+			    <const value="t1.inst_t2.getInst_t2(10): "/>
+				<chain>
+				   <call method="getT1"/>
+				   <call method="getInst_t2WithAdd">
+				      <params>
+					     <const value="10"/>
+					  </params>
+				   </call>
+				   <ref var="inst_ii"/>
+				</chain>
+            </params>
+        </print>
+    </entry>	
+</configuration>

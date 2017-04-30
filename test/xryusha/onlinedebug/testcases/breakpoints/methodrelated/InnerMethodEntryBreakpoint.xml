@@ -1,0 +1,12 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <methodEntry method="innerF"
+                     class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.InnerMethodBreakpoint$Inner">
+        </methodEntry>
+        <print location="both">
+            <params>
+                <const value="in InnerMethodBreakpoint$Inner.innerF()"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

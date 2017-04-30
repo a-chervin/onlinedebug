@@ -1,0 +1,15 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <fieldModification class="xryusha.onlinedebug.testcases.breakpoints.modification.ModificationBreakpoint$BaseType" field="str1"/>
+        <print location="both">
+            <params>
+                <const value="ii="/>
+                <ref var="ii"/>
+                <const value=": "/>
+                <modificationCurrent/>
+                <const value="->"/>
+                <modificationNew/>
+            </params>
+        </print>
+    </entry>
+</configuration>

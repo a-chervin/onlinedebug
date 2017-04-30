@@ -1,0 +1,35 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.local.LocalMethodsNoArgs" line="26"/>
+        <print location="both">  <!-- expected: staticFunc:0, staticFunc:0" -->
+            <params>
+			    <const value="staticFunc:"/>
+                <call method="staticFunc"/>
+			    <const value=" instFunc:"/>
+                <call method="instFunc"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.local.LocalMethodsNoArgs" line="30"/>
+        <print location="both">  <!-- expected: staticFunc:1, staticFunc:1" -->
+            <params>
+			    <const value="staticFunc:"/>
+                <call method="staticFunc"/>
+			    <const value=" instFunc:"/>
+                <call method="instFunc"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.local.LocalMethodsNoArgs" line="34"/>
+        <print location="both">  <!-- expected:  staticFunc:2, staticFunc:2" -->
+            <params>
+			    <const value="staticFunc:"/>
+                <call method="staticFunc"/>
+			    <const value=" instFunc:"/>
+                <call method="instFunc"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

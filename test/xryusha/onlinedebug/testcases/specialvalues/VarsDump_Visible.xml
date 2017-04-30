@@ -1,0 +1,18 @@
+<configuration>
+	<entry>
+		<atLocation class="xryusha.onlinedebug.testcases.specialvalues.VarsDump" line="31"/>
+		<print location="both">
+			<params>
+				<dump source="visible"/>
+			</params>
+		</print>
+	</entry>
+	<entry>
+		<atLocation class="xryusha.onlinedebug.testcases.specialvalues.VarsDump" line="39"/>
+		<print location="both">
+			<params>
+				<dump source="visible"/>
+			</params>
+		</print>
+	</entry>
+</configuration>

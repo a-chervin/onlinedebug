@@ -1,0 +1,65 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.local.LocalMethodsWithArgs" line="26"/>
+        <print location="both">  <!-- expected: staticFunc:0, staticFunc:0" -->
+            <params>
+			    <const value="staticFunc"/>
+                <call method="staticFunc">
+				  <params>
+				     <const value="str-"/>
+					 <ref var="ii_stat"/>
+				  </params>
+				</call>
+			    <const value=" instFunc:"/>
+                <call method="instFunc">
+				  <params>
+				     <const value="str-"/>
+					 <ref var="ii_inst"/>
+				  </params>				
+				</call>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.local.LocalMethodsWithArgs" line="30"/>
+        <print location="both">  <!-- expected: staticFunc:1, staticFunc:1" -->
+            <params>
+			    <const value="staticFunc"/>
+                <call method="staticFunc">
+				  <params>
+				     <const value="str-"/>
+					 <ref var="ii_stat"/>
+				  </params>
+				</call>
+			    <const value=" instFunc:"/>
+                <call method="instFunc">
+				  <params>
+				     <const value="str-"/>
+					 <ref var="ii_inst"/>
+				  </params>				
+				</call>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.local.LocalMethodsWithArgs" line="34"/>
+        <print location="both">  <!-- expected:  staticFunc:2, staticFunc:2" -->
+            <params>
+			    <const value="staticFunc"/>
+                <call method="staticFunc">
+				  <params>
+				     <const value="str-"/>
+					 <ref var="ii_stat"/>
+				  </params>
+				</call>
+			    <const value=" instFunc:"/>
+                <call method="instFunc">
+				  <params>
+				     <const value="str-"/>
+					 <ref var="ii_inst"/>
+				  </params>				
+				</call>
+            </params>
+        </print>
+    </entry>
+</configuration>

@@ -1,0 +1,203 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <!--
+       <entry> element structure:
+       1. breakpoint
+       2. optional - conditions
+       3. actions to be performed, may be more than 1
+    -->
+
+    <!--
+       actions
+     =========================
+       supported types:
+        <xs:element ref="print"/>
+        <xs:element ref="assign"/>
+        <xs:element ref="invoke"/>
+        <xs:element ref="return"/>
+    -->
+
+    <!-- ========================================== -->
+    <!-- <print>                                    -->
+    <!--    logs configured message to console or   -->
+    <!--    log file of local or remote VM          -->
+    <!--     configuration attributes:              -->
+    <!--     - location: log messages target:       -->
+    <!--         "local" logs target messages to    -->
+    <!--            local (monitor) VM              -->
+    <!--         "remote" logs target messages to   -->
+    <!--            remote (monitored) VM             -->
+    <!--         "both"                               -->
+    <!--           both to local and remote           -->
+    <!--     - localFile: local log file (if not      -->
+    <!--         specified but local logging enabled  -->
+    <!--         logs sent to console)                -->
+    <!--     - remoteFile: remote log file (if not    -->
+    <!--         specified but local logging enabled  -->
+    <!--         logs sent to console)                -->
+    <!-- ========================================== -->
+
+    <!-- at line 26 of class Impl log to console of
+         the monitor (this) process message
+         "staticFunc: {1}  Val: {2}", func(), mval
+    -->
+    <atLocation class="some.service.Impl" line="26"/>
+    <print location="local">
+        <params>
+            <const value="staticFunc:"/>
+            <call method="func"/>
+            <const value=" Val: "/>
+            <ref var="mval"/>
+        </params>
+    </print>
+
+    <!-- same as previous, but the message is logged
+         to file c:/logs/log_1.log on local side
+    -->
+    <atLocation class="some.service.Impl" line="26"/>
+    <print location="local" localFile="c:/logs/log_1.log">
+        <params>
+            <const value="staticFunc:"/>
+            <call method="func"/>
+            <const value=" Val: "/>
+            <ref var="mval"/>
+        </params>
+    </print>
+
+    <!-- same as previous, but the message is logged
+     to file /tmp/myproc.log on remote side
+    -->
+    <atLocation class="some.service.Impl" line="26"/>
+    <print location="remote" remoteFile="/tmp/myproc.log">
+        <params>
+            <const value="staticFunc:"/>
+            <call method="func"/>
+            <const value=" Val: "/>
+            <ref var="mval"/>
+        </params>
+    </print>
+
+    <!-- same as previous, but the message is logged
+     to file /tmp/myproc.log on remote side and to console
+     of local (monitor) process
+    -->
+    <atLocation class="some.service.Impl" line="26"/>
+    <print location="both" remoteFile="/tmp/myproc.log">
+        <params>
+            <const value="staticFunc:"/>
+            <call method="func"/>
+            <const value=" Val: "/>
+            <ref var="mval"/>
+        </params>
+    </print>
+
+    <!-- ========================================== -->
+    <!-- <assign>                                   -->
+    <!--    assign value to specified field member: -->
+    <!--    elements:                               -->
+    <!--      1. any ref type element (call, ref,   -->
+    <!--       chain where the last element must    -->
+    <!--       specify field (i.e. <ref> element    -->
+    <!--      2. <value> arbitrary rval content     -->
+    <!-- ========================================== -->
+
+    <!--
+       at line 31 of class Impl:
+       assign value of var ii_inst to variable ii
+       and value "100" to variable st. If required the value
+       will be converted to type of variable
+      -->
+    <entry>
+        <atLocation class="some.service.Impl" line="31"/>
+        <assign>
+            <ref var="ii"/>
+            <value><ref var="ii_inst"/></value>
+        </assign>
+        <assign>
+            <ref var="st"/>
+            <value><const value="100"/></value>
+        </assign>
+    </entry>
+
+    <!--
+       at line 31 of class Impl:
+       assign to field inst_ii  which may accessed as
+       getT1().conditionalNotNull(true).inst_ii
+       value of variable inst_ii.
+      -->
+    <entry>
+        <atLocation class="some.service.Impl" line="31"/>
+        <assign>
+            <chain>
+                <call method="getT1"/>
+                <call method="conditionalNotNull">
+                    <params>
+                        <const value="true"/>
+                    </params>
+                </call>
+                <ref var="inst_ii"/>
+            </chain>
+            <value><ref var="ii_inst"/></value>
+        </assign>
+        <assign>
+            <ref var="st"/>
+            <value><const value="100"/></value>
+        </assign>
+    </entry>
+
+    <!--
+   at line 31 of class Impl:
+   assign to static field ii of class a.b.MyClass
+   value of variable inst_ii.
+    -->
+    <entry>
+        <atLocation class="some.service.Impl" line="31"/>
+        <assign>
+            <ref var="ii" class="a.b.MyClass"/>
+            <value><ref var="ii_inst"/></value>
+        </assign>
+        <assign>
+            <ref var="st"/>
+            <value><const value="100"/></value>
+        </assign>
+    </entry>
+
+    <!-- ============================================ -->
+    <!-- <invoke>                                     -->
+    <!--    invokes arbitraty method at specific      -->
+    <!--    breakpoint, semantics same as of <call>   -->
+    <!--    Same as <call>, may be static or instance -->
+    <!-- ============================================ -->
+    <!--
+       At line 27 of class InvokeAction invoke method
+       addAndGet(2) on object intHolder
+    -->
+    <entry>
+        <atLocation class="testcases.actions.InvokeAction" line="27"/>
+        <invoke method="addAndGet">
+            <params>
+                <const value="2"/>
+            </params>
+            <ref var="intHolder"/>
+        </invoke>
+    </entry>
+
+    <!-- ============================================ -->
+    <!-- <return>                                     -->
+    <!--    Terminate execution of current method and -->
+    <!--    return to caller specified value in case  -->
+    <!--    method is not void                        -->
+    <!--    return value may be of any rvalue type    -->
+    <!-- ============================================ -->
+    <!--
+       At line 24 of class onlinedebug.testcases.actions.ReturnValue
+       interrupt execution of current method and return to caller value
+       20.
+    -->
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.actions.ReturnValue" line="24"/>
+        <return>
+            <const value="20" class="int"/>
+        </return>
+    </entry>
+
+</configuration>

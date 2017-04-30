@@ -1,0 +1,35 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.local.AssignInstanceVars" line="33"/>
+        <print location="both">  <!-- expected: ii_stat:0 ii_inst:0" -->
+            <params>
+			    <const value="ii_stat:"/>
+                <ref var="ii_stat"/>
+			    <const value=" ii_inst:"/>
+                <ref var="ii_inst"/>
+            </params>
+        </print>
+    </entry>	
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.local.AssignInstanceVars" line="35"/>
+		<assign>
+		  <ref var="ii_inst"/>
+		  <value><ref var="cnt"/></value>
+		</assign>
+		<assign>
+		  <ref var="ii_stat"/>
+		  <value><ref var="ii_inst"/></value>
+		</assign>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.local.AssignInstanceVars" line="36"/>
+        <print location="both">  <!-- expected: ii_stat:1 ii_inst:1" -->
+            <params>
+			    <const value="ii_stat:"/>
+                <ref var="ii_stat"/>
+			    <const value=" ii_inst:"/>
+                <ref var="ii_inst"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

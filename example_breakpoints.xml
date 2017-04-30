@@ -1,0 +1,124 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<!--
+   <entry> element structure:
+   1. breakpoint
+   2. optional - conditions
+   3. actions to be performed
+-->
+
+<!--
+   breakpoints
+ =========================
+   supported types:
+    <atLocation/>
+    <onException/>
+    <methodEntry/>
+    <methodExit/>
+    <fieldModification/>
+-->
+
+    <!-- line breakpoint -->
+    <!-- ================ -->
+    <entry>
+        <!-- in case of inner class the encloser type (i.e. the source class) is expected -->
+        <atLocation class="a.b.some.ServiceImpl" line="19"/>
+        <print>
+            <params>
+                <const value="hello"/>
+            </params>
+        </print>
+    </entry>
+
+    <!-- exception breakpoint -->
+    <!-- ===================== -->
+    <!-- if configuration related to one exception type it may be declared as attribute: -->
+    <entry>
+        <onException  exception="java.sql.SQLTimeoutException" />
+        <print>
+            <params>
+                <const value="hello"/>
+            </params>
+        </print>
+    </entry>
+    <!-- in case of multiple exceptions it should be defined as elements: -->
+    <entry>
+        <onException>
+            <exception>java.util.EmptyStackException</exception>
+            <exception>java.lang.ArrayIndexOutOfBoundsException</exception>
+            <exception>java.sql.SQLException</exception>
+        </onException>
+        <print>
+            <params>
+                <const value="hello"/>
+            </params>
+        </print>
+    </entry>
+
+
+    <!-- method entry/exit breakpoint -->
+    <!-- ============================ -->
+    <!-- no-argument method -->
+    <entry>
+        <methodEntry method="someFunc" class="a.b.some.ServiceImpl"/>
+        <print>
+            <params>
+                <const value="hello"/>
+            </params>
+        </print>
+    </entry>
+    <!-- OR -->
+    <entry>
+        <methodExit method="someFunc" class="a.b.some.ServiceImpl"/>
+        <print>
+            <params>
+                <const value="hello"/>
+            </params>
+        </print>
+    </entry>
+
+    <!-- with exact signature -->
+    <entry>
+        <methodEntry method="someFunc" class="a.b.some.ServiceImpl">
+            <arg class="boolean"/>
+            <arg class="java.lang.String"/>
+        </methodEntry>
+        <print>
+            <params>
+                <const value="hello"/>
+            </params>
+        </print>
+    </entry>
+
+    <!-- all overloaded methods of specific name -->
+    <entry>
+        <methodEntry method="someFunc" class="a.b.some.ServiceImpl" anySignature="true"/>
+        <print>
+            <params>
+                <const value="hello"/>
+            </params>
+        </print>
+    </entry>
+
+    <!--  constructors - almost the same -->
+    <entry>
+        <methodEntry constructor="true" class="a.b.some.ServiceImpl" />
+        <print>
+            <params>
+                <const value="hello"/>
+            </params>
+        </print>
+    </entry>
+
+
+    <!-- field value modification -->
+    <!-- ======================== -->
+    <entry>
+        <fieldModification class="a.b.SomeType$SomeInner" field="m_age"/>
+        <print>
+            <params>
+                <const value="hello"/>
+            </params>
+        </print>
+    </entry>
+    
+</configuration>

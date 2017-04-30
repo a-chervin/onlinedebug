@@ -1,0 +1,24 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.actions.ReturnValue" line="17"/>
+        <print location="both">
+            <params>
+                <ref var="retVal"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.actions.ReturnValue" line="24"/>
+        <return>
+            <const value="20" class="int"/>
+        </return>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.actions.ReturnValue" line="19"/>
+        <print location="both">
+            <params>
+                <ref var="retVal"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

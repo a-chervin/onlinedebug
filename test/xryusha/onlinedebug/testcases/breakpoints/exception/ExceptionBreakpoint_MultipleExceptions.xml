@@ -1,0 +1,29 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.breakpoints.exception.ExceptionBreakpoint" line="26"/>
+        <print location="both">
+            <params>
+                <ref var="counter"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <onException>
+            <exception>java.util.EmptyStackException</exception>
+            <exception>java.lang.ArrayIndexOutOfBoundsException</exception>
+            <exception>java.sql.SQLException</exception>
+        </onException>
+        <assign>
+            <ref var="counter"/>
+            <value><const value="10"/></value>
+        </assign>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.breakpoints.exception.ExceptionBreakpoint" line="31"/>
+        <print location="both">
+            <params>
+                <ref var="counter"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

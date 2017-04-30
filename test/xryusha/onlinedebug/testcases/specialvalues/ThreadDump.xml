@@ -1,0 +1,20 @@
+<configuration>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.specialvalues.ThreadDump" line="22"/>
+        <print location="both">
+            <params>
+			    <const value="stack depth_1():\n"/>
+				<threadStack/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+		<atLocation class="xryusha.onlinedebug.testcases.specialvalues.ThreadDump" line="29"/>
+		<print location="both">
+			<params>
+				<const value="stack depth_2():\n"/>
+				<threadStack/>
+			</params>
+		</print>
+	</entry>
+</configuration>

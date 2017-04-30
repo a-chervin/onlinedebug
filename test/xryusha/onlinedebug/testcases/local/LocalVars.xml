@@ -1,0 +1,28 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.local.LocalVars" line="19"/>
+        <print location="both">  <!-- expected: arg:0, ii:0, st:"vv-" -->
+            <params>
+			    <const value="arg:"/>
+                <ref var="arg"/>
+			    <const value=" ii:"/>
+                <ref var="ii"/>
+			    <const value=" ii:"/>
+                <ref var="st"/>                
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.local.LocalVars" line="24"/>
+        <print location="both">  <!-- expected: arg:1, ii:1, st:"vv-1" -->
+            <params>
+			    <const value="arg:"/>
+                <ref var="arg"/>
+			    <const value=" ii:"/>
+                <ref var="ii"/>
+			    <const value=" ii:"/>
+                <ref var="st"/>                
+            </params>
+        </print>
+    </entry>	
+</configuration>

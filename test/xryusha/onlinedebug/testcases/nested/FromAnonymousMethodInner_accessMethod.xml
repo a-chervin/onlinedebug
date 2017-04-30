@@ -1,0 +1,11 @@
+<configuration>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.nested.FromAnonymousMethodInner" line="32" fastFailOnMissing="false"/>
+        <print location="both">  <!-- expected: arg:0, ii:0, st:"vv-" -->
+            <params>
+                <const value="acc(): "/>
+                <call method="acc"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

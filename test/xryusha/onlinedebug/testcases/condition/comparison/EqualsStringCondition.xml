@@ -1,0 +1,32 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.comparison.ComparisonCondition" line="16"/>
+        <if>
+            <equal>
+                <ref var="strval"/>
+                <const value="BC"/>
+            </equal>
+        </if>
+        <print location="both">
+            <params>
+			    <const value="stop-1. strval="/>
+			    <ref var="strval"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.comparison.ComparisonCondition" line="18"/>
+        <if>
+            <equal>
+                <ref var="strval"/>
+                <const value="BC"/>
+            </equal>
+        </if>
+        <print location="both">
+            <params>
+                <const value="stop-2. strval="/>
+                <ref var="strval"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

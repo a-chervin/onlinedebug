@@ -1,0 +1,33 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <methodExit method="f"
+                     class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.MethodBreakpoint">
+            <params>
+                <arg class="int"/>
+                <arg class="java.lang.String"/>
+            </params>
+        </methodExit>
+        <print location="both">
+            <params>
+                <const value="return value(int,String): "/>
+                <returnValue/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <methodExit method="f"
+                    class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.MethodBreakpoint">
+            <params>
+                <arg class="int"/>
+                <arg class="java.lang.String"/>
+                <arg class="boolean"/>
+            </params>
+        </methodExit>
+        <print location="both">
+            <params>
+                <const value="return value(int,String,boolean): "/>
+                <returnValue/>
+            </params>
+        </print>
+    </entry>
+</configuration>

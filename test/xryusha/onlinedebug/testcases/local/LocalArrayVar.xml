@@ -1,0 +1,36 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.local.LocalArrayVar" line="22"/>
+        <print location="both">  <!-- expected: arg:0, ii:0, st:"vv-" -->
+            <params>
+			    <const value="ints[1]: "/>
+				<chain>
+				   <ref var="ints"/>
+				   <array index="1"/>
+				 </chain>
+			    <const value="  ints[3]: "/>
+				<chain>
+				   <ref var="ints"/>
+				   <array index="3"/>
+				</chain>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.local.LocalArrayVar" line="25"/>
+        <print location="both">  <!-- expected: arg:0, ii:0, st:"vv-" -->
+            <params>
+                <const value="ints[1]: "/>
+                <chain>
+                    <ref var="ints"/>
+                    <array index="1"/>
+                </chain>
+                <const value="  ints[3]: "/>
+                <chain>
+                    <ref var="ints"/>
+                    <array index="3"/>
+                </chain>
+            </params>
+        </print>
+    </entry>
+</configuration>

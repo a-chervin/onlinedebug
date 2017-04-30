@@ -1,0 +1,20 @@
+<configuration>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.other.MultithreadingPrintTest" line="28" fastFailOnMissing="false"/>
+        <print location="both">
+            <params>
+				<threadName/>
+			    <const value=": T1"/>
+            </params>
+        </print>
+    </entry>
+	<entry>
+		<atLocation class="xryusha.onlinedebug.testcases.other.MultithreadingPrintTest" line="45" fastFailOnMissing="false"/>
+		<print location="both">
+			<params>
+				<threadName/>
+				<const value=": T2"/>
+			</params>
+		</print>
+	</entry>
+</configuration>

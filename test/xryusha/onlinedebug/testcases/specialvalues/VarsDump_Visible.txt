@@ -1,0 +1,10 @@
+--- visible args ---
+  dep_1locint: int: 1
+  BP: java.lang.String: "dep1_qw12---"
+  dep1_locstr: java.lang.String: "xerp1"
+-------------------
+--- visible args ---
+  dep2_locint: int: 1
+  BP: java.lang.String: "dep2_as12---"
+  dep2_locstr: java.lang.String: "xerp"
+-------------------

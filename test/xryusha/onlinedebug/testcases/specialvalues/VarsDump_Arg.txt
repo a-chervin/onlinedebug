@@ -1,0 +1,11 @@
+--- method args ---
+  1: int: 6
+  2: java.lang.String: "zhop"
+  3: boolean: true
+-------------------
+--- method args ---
+  1: int: 12
+  2: java.lang.String: "dep12_zhop"
+  3: java.lang.String: null
+  4: boolean: true
+-------------------

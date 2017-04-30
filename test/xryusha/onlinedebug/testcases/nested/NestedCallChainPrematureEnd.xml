@@ -1,0 +1,36 @@
+<configuration>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.nested.NestedCallChainPrematureEnd" line="24"/>
+        <print location="both">
+            <params>
+			    <const value="conditionalNotNull(true): "/>
+				<chain>
+				   <call method="getT1"/>
+				   <call method="conditionalNotNull">
+				      <params>
+					     <const value="true"/>
+					  </params>
+				   </call>
+				   <ref var="inst_ii"/>
+				</chain>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.nested.NestedCallChainPrematureEnd" line="25"/>
+        <print location="both">
+            <params>
+			    <const value="conditionalNotNull(false): "/>
+				<chain>
+				   <call method="getT1"/>
+				   <call method="conditionalNotNull">
+				      <params>
+					     <const value="false"/>
+					  </params>
+				   </call>
+				   <ref var="inst_ii"/>
+				</chain>
+            </params>
+        </print>
+    </entry>	
+</configuration>

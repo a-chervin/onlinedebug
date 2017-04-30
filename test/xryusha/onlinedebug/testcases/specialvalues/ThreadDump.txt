@@ -1,0 +1,11 @@
+stack depth_1():
+  xryusha.onlinedebug.testcases.specialvalues.ThreadDump:22
+  xryusha.onlinedebug.testcases.specialvalues.ThreadDump:17
+  xryusha.onlinedebug.testcases.specialvalues.ThreadDump:10
+  xryusha.onlinedebug.testcases.AutomaticTestcaseDriver:38
+stack depth_2():
+  xryusha.onlinedebug.testcases.specialvalues.ThreadDump:29
+  xryusha.onlinedebug.testcases.specialvalues.ThreadDump:23
+  xryusha.onlinedebug.testcases.specialvalues.ThreadDump:17
+  xryusha.onlinedebug.testcases.specialvalues.ThreadDump:10
+  xryusha.onlinedebug.testcases.AutomaticTestcaseDriver:38

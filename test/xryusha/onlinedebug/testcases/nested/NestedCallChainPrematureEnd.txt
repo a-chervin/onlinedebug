@@ -1,0 +1,2 @@
+conditionalNotNull(true): 2
+conditionalNotNull(false): null

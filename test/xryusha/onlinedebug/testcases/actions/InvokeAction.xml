@@ -1,0 +1,32 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.actions.InvokeAction" line="26"/>
+        <print location="both">
+            <params>
+                <chain>
+                    <ref var="intHolder"/>
+                    <call method="get"/>
+                </chain>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.actions.InvokeAction" line="27"/>
+        <invoke method="addAndGet">
+            <params>
+                <const value="2"/>
+            </params>
+            <ref var="intHolder"/>            
+        </invoke>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.actions.InvokeAction" line="28"/>
+        <print location="both">
+            <params>
+                <chain>
+                    <ref var="intHolder"/>
+                </chain>
+            </params>
+        </print>
+    </entry>
+</configuration>

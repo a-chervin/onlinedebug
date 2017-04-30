@@ -1,0 +1,63 @@
+package {{PACKAGE}};
+
+/*
+   Template for generated loader class
+*/
+import java.nio.charset.Charset;
+import java.nio.charset.spi.CharsetProvider;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.Callable;
+
+public class {{CLASSNAME}} extends CharsetProvider
+{
+    private final static List<String> classesToLoad =
+              Arrays.asList({{CLASSES}});
+
+    static {
+        System.out.println(":::: remote loader {{CLASSNAME}} loaded ");
+    }
+
+   // @Override
+    public Iterator<Charset> charsets()
+    {
+        load();
+        return Collections.EMPTY_LIST.iterator();
+    }
+
+
+    // @Override
+    public Charset charsetForName(String charsetName)
+    {
+        load();
+        return null;
+    }
+
+    // @Override
+    public Object call() throws Exception
+    {
+        load();
+        return null;
+    }
+
+    // @Override
+    public void run()
+    {
+        load();
+    }
+
+    private void load()
+    {
+        try {
+            for(String name: classesToLoad) {
+                Class clazz = Class.forName(name);
+                System.out.println(":::: remotely loaded " + clazz);
+            }
+        } catch (ClassNotFoundException e) {
+            System.out.println(":::: remote loader {{CLASSNAME}} failed");
+            e.printStackTrace();
+        }
+    }
+}

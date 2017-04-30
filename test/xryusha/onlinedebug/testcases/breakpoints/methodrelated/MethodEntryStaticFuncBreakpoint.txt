@@ -1,0 +1,39 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="onlinedebug.testcases.breakpoints.methodrelated.MethodBreakpoint" line="24"/>
+        <print location="both">
+            <params>
+                <ref var="counter"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <methodEntry method="f"
+                     class="onlinedebug.testcases.breakpoints.methodrelated.MethodBreakpoint">
+            <params>
+                <ref class="int"/>
+                <ref class="java.lang.String"/>
+            </params>
+        </methodEntry>
+        <assign>
+            <ref var="counter"/>
+            <value><const value="48"/></value>
+        </assign>
+    </entry>
+    <entry>
+        <atLocation class="onlinedebug.testcases.breakpoints.methodrelated.MethodBreakpoint" line="26"/>
+        <print location="both">
+            <params>
+                <ref var="counter"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="onlinedebug.testcases.breakpoints.methodrelated.MethodBreakpoint" line="29"/>
+        <print location="both">
+            <params>
+                <ref var="counter"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

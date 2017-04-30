@@ -1,0 +1,3 @@
+staticFuncstr-0 instFunc:str-0
+staticFuncstr-1 instFunc:str-1
+staticFuncstr-2 instFunc:str-2

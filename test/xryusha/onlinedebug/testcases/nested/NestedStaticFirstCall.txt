@@ -1,0 +1,2 @@
+getT1().inst_ii: 1   getT1().inst_t2.inst_ii: 2
+getT1().inst_ii: 100   getT1().inst_t2.inst_ii: 200

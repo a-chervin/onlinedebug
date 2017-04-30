@@ -1,0 +1,16 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <onException  exception="java.net.BindException" />
+        <return>
+            <const value="20" class="int"/>
+        </return>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.actions.ReturnOnException" line="17"/>
+        <print location="both">
+            <params>
+                <ref var="ii"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

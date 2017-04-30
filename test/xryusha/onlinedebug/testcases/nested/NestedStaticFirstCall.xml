@@ -1,0 +1,38 @@
+<configuration>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.nested.NestedStaticFirstCall" line="23"/>
+        <print location="both">  <!-- expected: arg:0, ii:0, st:"vv-" -->
+            <params>
+			    <const value="getT1().inst_ii: "/>
+				<chain>
+				   <call method="getT1"/>
+				   <ref var="inst_ii"/>
+				</chain>
+			    <const value="   getT1().inst_t2.inst_ii: "/>
+				<chain>
+				   <call method="getT1"/>
+				   <ref var="inst_t2"/>
+				   <ref var="inst_ii"/>
+				</chain>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.nested.NestedStaticFirstCall" line="26"/>
+        <print location="both">  <!-- expected: arg:1, ii:1, st:"vv-1" -->
+            <params>
+			    <const value="getT1().inst_ii: "/>
+				<chain>
+				   <call method="getT1"/>
+				   <ref var="inst_ii"/>
+				</chain>
+			    <const value="   getT1().inst_t2.inst_ii: "/>
+				<chain>
+				   <call method="getT1"/>
+				   <ref var="inst_t2"/>
+				   <ref var="inst_ii"/>
+				</chain>
+            </params>
+        </print>
+    </entry>	
+</configuration>

@@ -1,0 +1,66 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.grouping.ComplexCondition" line="14"/>
+        <if>  <!-- ((v1==2&&v2==4)||(v1==7&&v2==5)) ==> false -->
+            <or>
+                <and>
+                    <equal>
+                        <ref var="v1"/>
+                        <const value="2" class="int"/>
+                    </equal>
+                    <equal>
+                        <ref var="v2"/>
+                        <const value="4" class="int"/>
+                    </equal>
+                </and>
+                <and>
+                    <equal>
+                        <ref var="v1"/>
+                        <const value="7" class="int"/>
+                    </equal>
+                    <equal>
+                        <ref var="v2"/>
+                        <const value="5" class="int"/>
+                    </equal>
+                </and>
+            </or>
+        </if>
+        <print location="both">
+            <params>
+                <const value="stop-1. ((v1==2 and v2==4) or (v1==7 and v2==5))"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.grouping.ComplexCondition" line="15"/>
+        <if>    <!-- ((v1==2 && va < v2 )||(v1==7&&v2==5)) ==> false -->
+            <or>
+                <and>
+                    <equal>
+                        <ref var="v1"/>
+                        <const value="1" class="int"/>
+                    </equal>
+                    <less>
+                        <ref var="v1"/>
+                        <ref var="v2"/>
+                    </less>
+                </and>
+                <and>
+                    <equal>
+                        <ref var="v1"/>
+                        <const value="7" class="int"/>
+                    </equal>
+                    <equal>
+                        <ref var="v2"/>
+                        <const value="5" class="int"/>
+                    </equal>
+                </and>
+            </or>
+        </if>
+        <print location="both">
+            <params>
+                <const value="stop-2. ((v1==2 and v1 less v2 )||(v1==7  and v2==5))"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

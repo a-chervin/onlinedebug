@@ -1,0 +1,46 @@
+<configuration>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.nested.NestedInstance" line="24"/>
+        <print location="both">  <!-- expected: arg:0, ii:0, st:"vv-" -->
+            <params>
+			    <const value="t1.inst_ii: dotted:"/>
+                <ref var="t1.inst_ii"/>
+			    <const value=" chained:"/>
+				<chain>
+				   <ref var="t1"/>
+				   <ref var="inst_ii"/>
+				</chain>
+			    <const value="   t1.inst_t2.inst_ii: dotted:"/>
+                <ref var="t1.inst_t2.inst_ii"/>
+			    <const value=" chained:"/>
+				<chain>
+				   <ref var="t1"/>
+				   <ref var="inst_t2"/>
+				   <ref var="inst_ii"/>
+				</chain>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.nested.NestedInstance" line="27"/>
+        <print location="both">  <!-- expected: arg:1, ii:1, st:"vv-1" -->
+            <params>
+			    <const value="t1.inst_ii: dotted:"/>
+                <ref var="t1.inst_ii"/>
+			    <const value=" chained:"/>
+				<chain>
+				   <ref var="t1"/>
+				   <ref var="inst_ii"/>
+				</chain>
+			    <const value="   t1.inst_t2.inst_ii: dotted:"/>
+                <ref var="t1.inst_t2.inst_ii"/>
+			    <const value=" chained:"/>
+				<chain>
+				   <ref var="t1"/>
+				   <ref var="inst_t2"/>
+				   <ref var="inst_ii"/>
+				</chain>
+            </params>
+        </print>
+    </entry>	
+</configuration>

@@ -1,0 +1,50 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.grouping.ComplexCondition" line="14"/>
+        <if>
+            <and>
+                <equal>
+                    <ref var="v1"/>
+                    <const value="1" class="int"/>
+                </equal>
+                <equal>
+                    <ref var="v2"/>
+                    <const value="1" class="int"/>
+                </equal>
+            </and>
+        </if>
+        <print location="both">
+            <params>
+                <const value="stop-1. "/>
+                <ref var="v1"/>
+                <const value="=1 and "/>
+                <ref var="v2"/>
+                <const value="=1"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.grouping.ComplexCondition" line="15"/>
+        <if>
+            <and>
+                <equal>
+                    <ref var="v1"/>
+                    <const value="1" class="int"/>
+                </equal>
+                <equal>
+                    <ref var="v2"/>
+                    <const value="2" class="int"/>
+                </equal>
+            </and>
+        </if>
+        <print location="both">
+            <params>
+                <const value="stop-2. "/>
+                <ref var="v1"/>
+                <const value="=1 and "/>
+                <ref var="v2"/>
+                <const value="=2"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

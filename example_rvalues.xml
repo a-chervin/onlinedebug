@@ -1,0 +1,374 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <!--
+       <entry> element structure:
+       1. breakpoint
+       2. optional - conditions
+       3. actions to be performed
+    -->
+
+    <!--
+       rValue types
+     ======================
+       supported types:
+            <const/>
+            <ref/>
+            <call/>
+            <constructor/>
+            <chain/>
+            <array/>
+
+            - event specific types -
+            <returnValue/>
+            <thrownException/>
+            <modificationCurrent/>
+            <modificationNew/>
+
+            - special types -
+            <time/>
+            <threadStack/>
+            <dump/>
+            <threadName/>
+    -->
+
+
+    <!-- =======================================
+   <const/> :
+        const value:
+          - value
+          - class (optional, mostly casted to required automatically)
+     ============================================ -->
+    <entry>
+        <atLocation class="a.b.some.ServiceImpl" line="19"/>
+        <print>
+            <params>
+                <const value="hello"/>
+            </params>
+        </print>
+    </entry>
+    <!-- OR -->
+    <entry>
+        <atLocation class="a.b.some.ServiceImpl" line="19"/>
+        <print>
+            <params>
+                <const value="5"/>
+            </params>
+        </print>
+    </entry>
+    <!-- OR -->
+    <entry>
+        <atLocation class="a.b.some.ServiceImpl" line="19"/>
+        <print>
+            <params>
+                <const value="true" class="boolean"/>
+            </params>
+        </print>
+    </entry>
+
+    <!-- =======================================
+  <ref/> :
+        reference to field visible from breaking point  - local, instance or static,
+        including enclosing class visibility from inners, according to
+        java visibility rules. Field does not have to be public:
+    ============================================ -->
+    <entry>
+        <atLocation class="a.b.some.ServiceImpl" line="19"/>
+        <print>
+            <params>
+                <ref var="myAddress"/>
+            </params>
+        </print>
+    </entry>
+    <!-- or as fields reference chain, fields do not have to be public: -->
+    <entry>
+        <atLocation class="a.b.some.ServiceImpl" line="19"/>
+        <print>
+            <params>
+                <ref var="myAddress.district.building"/>
+            </params>
+        </print>
+    </entry>
+    <!-- reference to static field on another class -->
+    <entry>
+        <atLocation class="a.b.some.ServiceImpl" line="19"/>
+        <print>
+            <params>
+                <ref var="m_someConstVal" class="a.b.d.SomeClass"/>
+            </params>
+        </print>
+    </entry>
+
+    <!-- ==============================================
+    <call/> :
+         value returned by method invocation.
+         - method name
+         - defining class
+         - arguments
+    =================================================== -->
+    <!-- call to some instance or static no-arg method or this class -->
+    <entry>
+        <atLocation class="a.b.some.ServiceImpl" line="19"/>
+        <print>
+            <params>
+                <call method="someFunc"/>
+            </params>
+        </print>
+    </entry>
+
+    <!-- call to some instance or static method with arguments of this class
+         arguments may be of any type from supported types list, including
+         calls to other methods.
+         in case of overloaded methods selection is defined by configured
+         arguments. In cases of ambiguency where argument id defined by <const/> and
+         it may be interpreted as number of possible types, say, f(int) and f(string),
+         class of const is desirable:
+            <const value="10.0" class="double"/>
+    -->
+    <entry>
+        <atLocation class="a.b.some.ServiceImpl" line="19"/>
+        <print>
+            <params>
+                <call method="someFunc">
+                    <params>
+                        <const value="str-"/>
+                        <ref var="ii_inst"/>
+                    </params>
+                </call>
+            </params>
+        </print>
+    </entry>
+
+    <!-- call to static method -->
+    <entry>
+        <atLocation class="a.b.some.ServiceImpl" line="19"/>
+        <print>
+            <params>
+                <call method="someStaticFunc" class="a.b.c.Util">
+                    <params>
+                        <ref var="ii_inst"/>
+                        <constructor class="java.util.Date"/>
+                    </params>
+                </call>
+            </params>
+        </print>
+    </entry>
+
+   <!-- ==============================================
+<constructor/> :
+  creating method argument, no-arg or with
+   =================================================== -->
+
+    <!-- passing new object as method argument -->
+    <entry>
+        <atLocation class="a.b.some.ServiceImpl" line="19"/>
+        <print>
+            <params>
+                <call method="someFunc">
+                    <params>
+                        <constructor class="java.util.Date"/>
+                    </params>
+                </call>
+            </params>
+        </print>
+    </entry>
+    <!-- or -->
+    <entry>
+        <atLocation class="a.b.some.ServiceImpl" line="19"/>
+        <print>
+            <params>
+                <call method="someFunc">
+                    <params>
+                        <constructor class="my.some.Impl">
+                            <params>
+                                <const value="str-"/>
+                                <ref var="ii_inst"/>
+                            </params>
+                        </constructor>
+                    </params>
+                </call>
+            </params>
+        </print>
+    </entry>
+
+    <!-- ==============================================
+  <chain/> :
+     access path chain to desired value. While <ref/> allows
+     defining fields chain, i.e. a.v.b.d, <chain/> is a general
+     path form, containing combination of different rval types.
+    =================================================== -->
+    <!-- accessing method as t2.getCoordinates().getLeftCorner().x -->
+    <entry>
+        <atLocation class="a.b.some.ServiceImpl" line="19"/>
+        <print>
+            <params>
+                <chain>
+                    <ref var="t1"/>
+                    <call method="getCoordinates"/>
+                    <call method="getLeftCorner"/>
+                    <ref var="x"/>
+                </chain>
+            </params>
+        </print>
+    </entry>
+
+    <!-- ==============================================
+ <array/> :
+     accessing to specific entry of reference to array.
+     may by fixed, defined in configuration, or dynamic.
+     fixed index is specified as attribute, dynamic as element
+     defined by rvalue:
+     =================================================== -->
+    <!-- fixed -->
+    <entry>
+        <atLocation class="a.b.some.ServiceImpl" line="19"/>
+        <print>
+            <params>
+                <chain>
+                    <ref var="myIntArray"/>
+                    <array index="1"/>
+                </chain>
+            </params>
+        </print>
+    </entry>
+    <!-- dynamic -->
+    <entry>
+        <atLocation class="a.b.some.ServiceImpl" line="19"/>
+        <print>
+            <params>
+                <chain>
+                    <ref var="myIntArray"/>
+                    <call method="getDynamicInx/"/>
+                </chain>
+            </params>
+        </print>
+    </entry>
+
+    <!-- ======================== -->
+    <!-- Event specific values    -->
+    <!-- ======================== -->
+
+    <!-- ==============================================
+  <returnValue/> :
+      Available for methodExit events (see <methodExit/>
+      breakpoint description
+     =================================================== -->
+    <entry>
+        <methodExit method="myFunc" class="my.som.Impt">
+            <params>
+                <arg class="int"/>
+                <arg class="java.lang.String"/>
+            </params>
+        </methodExit>
+        <print location="both">
+            <params>
+                <const value="return value: "/>
+                <returnValue/>
+            </params>
+        </print>
+    </entry>
+
+    <!-- ==============================================
+<thrownException/> :
+  Available for onException events (see <onException/>
+  breakpoint description
+    =================================================== -->
+    <entry>
+        <onException  exception="java.sql.SQLTimeoutException" />
+        <print location="both">
+            <params>
+                <const value="thrown"/>
+                <thrownException/>
+            </params>
+        </print>
+    </entry>
+
+    <!-- ==============================================
+ <modificationCurrent/>, <modificationNew/> :
+   Available for methodExit events (see <fieldModification/>
+   breakpoint description
+    =================================================== -->
+    <entry>
+        <fieldModification class="some.my.Imp" field="m_field"/>
+        <print location="both">
+            <params>
+                <const value=": "/>
+                <modificationCurrent/>
+                <const value="->"/>
+                <modificationNew/>
+            </params>
+        </print>
+    </entry>
+
+
+    <!-- ================================= -->
+    <!-- Special values (used in <print/>  -->
+    <!-- ================================= -->
+
+    <!-- =========================== -->
+    <!-- current local time          -->
+    <!-- =========================== -->
+    <entry>
+        <onException  exception="java.sql.SQLTimeoutException" />
+        <print location="both">
+            <params>
+                <time/>
+                <const value="thrown"/>
+                <thrownException/>
+            </params>
+        </print>
+    </entry>
+
+    <!-- =========================== -->
+    <!-- <threadStack>               -->
+    <!--     thread trace            -->
+    <!-- =========================== -->
+    <entry>
+        <fieldModification class="some.my.Imp" field="m_field"/>
+        <print location="both">
+            <params>
+                <const value="changed m_field: "/>
+                <modificationCurrent/>
+                <const value="->"/>
+                <modificationNew/>
+                <const value="\ncame from: "/>
+                <threadStack/> <!-- this one -->
+            </params>
+        </print>
+    </entry>
+
+    <!-- =========================== -->
+    <!-- <threadName>               -->
+    <!--     current thread name    -->
+    <!-- =========================== -->
+    <entry>
+        <onException  exception="java.sql.SQLTimeoutException" />
+        <print location="both">
+            <params>
+                <const value="me: "/>
+                <threadName/>
+            </params>
+        </print>
+    </entry>
+
+    <!-- =========================== -->
+    <!-- <dump/>                     -->
+    <!--   method arguments/local    -->
+    <!--  visible variables dump     -->
+    <!--  -source:                   -->
+    <!--   <dump source="args"/> :    -->
+    <!--        method arguments      -->
+    <!--   <dump source="visible"/> : -->
+    <!--          visible variables   -->
+    <!--     source="args visible" :  -->
+    <!--      both :                  -->
+    <!-- =========================== -->
+    <entry>
+        <onException  exception="java.sql.SQLTimeoutException" />
+        <print location="both">
+            <params>
+                <const value="dump: \n"/>
+                <dump source="args visible"/>
+            </params>
+        </print>
+    </entry>
+
+</configuration>

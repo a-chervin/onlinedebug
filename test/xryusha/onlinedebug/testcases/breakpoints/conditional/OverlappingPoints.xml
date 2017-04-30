@@ -1,0 +1,30 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.breakpoints.conditional.OverlappingPoints" line="14"/>
+        <if>
+            <equal>
+                <ref var="v1"/>
+                <const value="2" class="int"/>
+            </equal>
+        </if>
+        <print location="both">
+            <params>
+			    <const value="stop-1. v1=2"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.breakpoints.conditional.OverlappingPoints" line="14"/>
+        <if>
+            <equal>
+                <ref var="v1"/>
+                <const value="1" class="int"/>
+            </equal>
+        </if>
+        <print location="both">
+            <params>
+                <const value="stop-2. v1=1"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

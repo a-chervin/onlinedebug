@@ -1,0 +1,528 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xs:schema version="1.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:element name="abstractBreakPointSpec" type="abstractBreakPointSpec"/>
+
+  <xs:element name="and" type="and"/>
+
+  <xs:element name="arg">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="abstractRef">
+          <xs:sequence/>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="array" type="fixedIndex"/>
+
+  <xs:element name="assign" type="assign"/>
+
+  <xs:element name="atLocation" type="line-breakpoint"/>
+
+  <xs:element name="call" type="call"/>
+
+  <xs:element name="chain" type="ref-chain"/>
+
+  <xs:element name="configuration" type="configuration"/>
+
+  <xs:element name="const" type="const"/>
+
+  <xs:element name="constructor" type="constructor"/>
+
+  <xs:element name="dump">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="rValue">
+          <xs:sequence/>
+          <xs:attribute name="source">
+            <xs:simpleType>
+              <xs:list itemType="dumpSource"/>
+            </xs:simpleType>
+          </xs:attribute>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="equal" type="equalsConditionSpec"/>
+
+  <xs:element name="invoke" type="invoke"/>
+
+  <xs:element name="isnull" type="isnull"/>
+
+  <xs:element name="less" type="less"/>
+
+  <xs:element name="methodEntry" type="method-entry"/>
+
+  <xs:element name="methodExit" type="method-exit"/>
+
+  <xs:element name="methodTargetingBreakPoint" type="methodTargetingBreakPoint"/>
+
+  <xs:element name="onException" type="exception-breakpoint"/>
+
+  <xs:element name="or" type="or"/>
+
+  <xs:element name="print" type="print"/>
+
+  <xs:element name="ref" type="ref"/>
+
+  <xs:element name="return" type="earlyReturn"/>
+
+  <xs:element name="returnValue">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="rValue">
+          <xs:sequence/>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="threadName">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="rValue">
+          <xs:sequence/>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="threadStack">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="rValue">
+          <xs:sequence/>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="thrownException" type="thrownException"/>
+
+  <xs:complexType name="configuration">
+    <xs:sequence>
+      <xs:element name="entry" type="entry" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="entry">
+    <xs:sequence>
+      <xs:choice>
+        <xs:element ref="abstractBreakPointSpec"/>
+        <xs:element ref="atLocation"/>
+        <xs:element ref="onException"/>
+        <xs:element ref="methodTargetingBreakPoint"/>
+        <xs:element ref="methodEntry"/>
+        <xs:element ref="methodExit"/>
+      </xs:choice>
+      <xs:element name="if" type="conditionWrapper" minOccurs="0"/>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="assign"/>
+        <xs:element ref="print"/>
+        <xs:element ref="return"/>
+        <xs:element ref="invoke"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="enabled" type="xs:boolean"/>
+  </xs:complexType>
+
+  <xs:complexType name="abstractBreakPointSpec" abstract="true">
+    <xs:sequence/>
+  </xs:complexType>
+
+  <xs:complexType name="line-breakpoint">
+    <xs:complexContent>
+      <xs:extension base="abstractBreakPointSpec">
+        <xs:sequence/>
+        <xs:attribute name="class" type="xs:string" use="required"/>
+        <xs:attribute name="line" type="xs:int" use="required"/>
+        <xs:attribute name="fastFailOnMissing" type="xs:boolean"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="exception-breakpoint">
+    <xs:complexContent>
+      <xs:extension base="abstractBreakPointSpec">
+        <xs:sequence>
+          <xs:element name="exception" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="exception" type="xs:string"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="methodTargetingBreakPoint" abstract="true">
+    <xs:complexContent>
+      <xs:extension base="abstractBreakPointSpec">
+        <xs:sequence>
+          <xs:element name="params" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                  <xs:element ref="const"/>
+                  <xs:element ref="call"/>
+                  <xs:element ref="constructor"/>
+                  <xs:element ref="chain"/>
+                  <xs:element ref="ref"/>
+                  <xs:element ref="array"/>
+                  <xs:element ref="thrownException"/>
+                  <xs:element ref="arg"/>
+                  <xs:element ref="threadStack"/>
+                  <xs:element ref="dump"/>
+                  <xs:element ref="returnValue"/>
+                  <xs:element ref="threadName"/>
+                  <xs:element ref="invoke"/>
+                </xs:choice>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+        <xs:attribute name="class" type="xs:string"/>
+        <xs:attribute name="method" type="xs:string" use="optional"/>
+        <xs:attribute name="constructor" type="xs:boolean"/>
+        <xs:attribute name="anySignature" type="xs:boolean"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="rValue" abstract="true">
+    <xs:sequence/>
+    <xs:attribute name="class" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="const">
+    <xs:complexContent>
+      <xs:extension base="rValue">
+        <xs:sequence/>
+        <xs:attribute name="value" type="xs:string"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="abstractRef" abstract="true">
+    <xs:complexContent>
+      <xs:extension base="rValue">
+        <xs:sequence/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="call">
+    <xs:complexContent>
+      <xs:extension base="abstractRef">
+        <xs:sequence>
+          <xs:element name="params" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                  <xs:element ref="const"/>
+                  <xs:element ref="call"/>
+                  <xs:element ref="constructor"/>
+                  <xs:element ref="chain"/>
+                  <xs:element ref="ref"/>
+                  <xs:element ref="array"/>
+                  <xs:element ref="thrownException"/>
+                  <xs:element ref="arg"/>
+                  <xs:element ref="threadStack"/>
+                  <xs:element ref="dump"/>
+                  <xs:element ref="returnValue"/>
+                  <xs:element ref="threadName"/>
+                  <xs:element ref="invoke"/>
+                </xs:choice>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+        <xs:attribute name="method" type="xs:string" use="optional"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="constructor">
+    <xs:complexContent>
+      <xs:extension base="call">
+        <xs:sequence/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="ref-chain">
+    <xs:complexContent>
+      <xs:extension base="abstractRef">
+        <xs:sequence>
+          <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element ref="call"/>
+            <xs:element ref="constructor"/>
+            <xs:element ref="chain"/>
+            <xs:element ref="ref"/>
+            <xs:element ref="array"/>
+            <xs:element ref="thrownException"/>
+            <xs:element ref="arg"/>
+            <xs:element ref="invoke"/>
+          </xs:choice>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="ref">
+    <xs:complexContent>
+      <xs:extension base="abstractRef">
+        <xs:sequence/>
+        <xs:attribute name="var" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="fixedIndex">
+    <xs:complexContent>
+      <xs:extension base="abstractRef">
+        <xs:sequence/>
+        <xs:attribute name="fixedIndex" type="xs:int" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="thrownException">
+    <xs:complexContent>
+      <xs:extension base="abstractRef">
+        <xs:sequence/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="method-entry">
+    <xs:complexContent>
+      <xs:extension base="methodTargetingBreakPoint">
+        <xs:sequence/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="method-exit">
+    <xs:complexContent>
+      <xs:extension base="methodTargetingBreakPoint">
+        <xs:sequence/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="conditionWrapper">
+    <xs:choice>
+      <xs:element ref="and"/>
+      <xs:element ref="or"/>
+      <xs:element ref="equal"/>
+      <xs:element ref="less"/>
+      <xs:element ref="isnull"/>
+    </xs:choice>
+  </xs:complexType>
+
+  <xs:complexType name="abstractConditionSpec" abstract="true">
+    <xs:sequence/>
+    <xs:attribute name="inverse" type="xs:boolean"/>
+  </xs:complexType>
+
+  <xs:complexType name="groupConditionSpec" abstract="true">
+    <xs:complexContent>
+      <xs:extension base="abstractConditionSpec">
+        <xs:sequence>
+          <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element ref="and"/>
+            <xs:element ref="or"/>
+            <xs:element ref="equal"/>
+            <xs:element ref="less"/>
+            <xs:element ref="isnull"/>
+          </xs:choice>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="and">
+    <xs:complexContent>
+      <xs:extension base="groupConditionSpec">
+        <xs:sequence/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="or">
+    <xs:complexContent>
+      <xs:extension base="groupConditionSpec">
+        <xs:sequence/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="relationConditionSpec" abstract="true">
+    <xs:complexContent>
+      <xs:extension base="abstractConditionSpec">
+        <xs:sequence>
+          <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element ref="const"/>
+            <xs:element ref="call"/>
+            <xs:element ref="constructor"/>
+            <xs:element ref="chain"/>
+            <xs:element ref="ref"/>
+            <xs:element ref="array"/>
+            <xs:element ref="thrownException"/>
+            <xs:element ref="arg"/>
+            <xs:element ref="threadStack"/>
+            <xs:element ref="dump"/>
+            <xs:element ref="returnValue"/>
+            <xs:element ref="threadName"/>
+            <xs:element ref="invoke"/>
+          </xs:choice>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="equalsConditionSpec">
+    <xs:complexContent>
+      <xs:extension base="relationConditionSpec">
+        <xs:sequence/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="less">
+    <xs:complexContent>
+      <xs:extension base="relationConditionSpec">
+        <xs:sequence/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="isnull">
+    <xs:complexContent>
+      <xs:extension base="abstractConditionSpec">
+        <xs:sequence>
+          <xs:element name="value" type="rValue" minOccurs="0"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="assign">
+    <xs:sequence>
+      <xs:choice>
+        <xs:element ref="call"/>
+        <xs:element ref="constructor"/>
+        <xs:element ref="chain"/>
+        <xs:element ref="ref"/>
+        <xs:element ref="array"/>
+        <xs:element ref="thrownException"/>
+        <xs:element ref="arg"/>
+        <xs:element ref="invoke"/>
+      </xs:choice>
+      <xs:element name="value" type="valueHolder"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="valueHolder">
+    <xs:choice>
+      <xs:element ref="const"/>
+      <xs:element ref="call"/>
+      <xs:element ref="constructor"/>
+      <xs:element ref="chain"/>
+      <xs:element ref="ref"/>
+      <xs:element ref="array"/>
+      <xs:element ref="thrownException"/>
+      <xs:element ref="arg"/>
+      <xs:element ref="threadStack"/>
+      <xs:element ref="dump"/>
+      <xs:element ref="returnValue"/>
+      <xs:element ref="threadName"/>
+      <xs:element ref="invoke"/>
+    </xs:choice>
+  </xs:complexType>
+
+  <xs:complexType name="print">
+    <xs:sequence>
+      <xs:element name="params" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:choice minOccurs="0" maxOccurs="unbounded">
+              <xs:element ref="const"/>
+              <xs:element ref="call"/>
+              <xs:element ref="constructor"/>
+              <xs:element ref="chain"/>
+              <xs:element ref="ref"/>
+              <xs:element ref="array"/>
+              <xs:element ref="thrownException"/>
+              <xs:element ref="arg"/>
+              <xs:element ref="threadStack"/>
+              <xs:element ref="dump"/>
+              <xs:element ref="returnValue"/>
+              <xs:element ref="threadName"/>
+              <xs:element ref="invoke"/>
+            </xs:choice>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="location" type="location"/>
+    <xs:attribute name="localFile" type="xs:string"/>
+    <xs:attribute name="remoteFile" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="earlyReturn">
+    <xs:choice>
+      <xs:element ref="const"/>
+      <xs:element ref="call"/>
+      <xs:element ref="constructor"/>
+      <xs:element ref="chain"/>
+      <xs:element ref="ref"/>
+      <xs:element ref="array"/>
+      <xs:element ref="thrownException"/>
+      <xs:element ref="arg"/>
+      <xs:element ref="threadStack"/>
+      <xs:element ref="dump"/>
+      <xs:element ref="returnValue"/>
+      <xs:element ref="threadName"/>
+      <xs:element ref="invoke"/>
+    </xs:choice>
+  </xs:complexType>
+
+  <xs:complexType name="invoke">
+    <xs:complexContent>
+      <xs:extension base="call">
+        <xs:choice>
+          <xs:element ref="call"/>
+          <xs:element ref="constructor"/>
+          <xs:element ref="chain"/>
+          <xs:element ref="ref"/>
+          <xs:element ref="array"/>
+          <xs:element ref="thrownException"/>
+          <xs:element ref="arg"/>
+          <xs:element ref="invoke"/>
+        </xs:choice>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="elements">
+    <xs:sequence/>
+  </xs:complexType>
+
+  <xs:simpleType name="location">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="local"/>
+      <xs:enumeration value="remote"/>
+      <xs:enumeration value="both"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="dumpSource">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="args"/>
+      <xs:enumeration value="visible"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>
+

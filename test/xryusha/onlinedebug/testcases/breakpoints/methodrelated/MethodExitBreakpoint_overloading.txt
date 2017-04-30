@@ -1,0 +1,3 @@
+return value(int,String): 15
+return value(int,String): 15
+return value(int,String,boolean): 16

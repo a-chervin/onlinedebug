@@ -1,0 +1,3 @@
+staticFunc:0 instFunc:0
+staticFunc:1 instFunc:1
+staticFunc:2 instFunc:2

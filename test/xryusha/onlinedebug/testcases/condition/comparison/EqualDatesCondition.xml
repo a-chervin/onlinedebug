@@ -1,0 +1,30 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.comparison.ComparisonCondition" line="25"/>
+        <if>
+            <equal>
+                <ref var="nowDate"/>
+                <ref var="beforeDate"/>
+            </equal>
+        </if>
+        <print location="both">
+            <params>
+			    <const value="stop-1. equal dates"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.comparison.ComparisonCondition" line="27"/>
+        <if>
+            <equal>
+                <ref var="nowDate"/>
+                <ref var="now2Date"/>
+            </equal>
+        </if>
+        <print location="both">
+            <params>
+                <const value="stop-2. equal dates"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

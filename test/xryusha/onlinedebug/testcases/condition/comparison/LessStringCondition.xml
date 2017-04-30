@@ -1,0 +1,34 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.comparison.ComparisonCondition" line="16"/>
+        <if>
+            <less>
+                <ref var="strval"/>
+                <const value="AA"/>
+            </less>
+        </if>
+        <print location="both">
+            <params>
+			    <const value="stop-1. strval="/>
+			    <ref var="strval"/>
+                <const value=" less then AA"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.comparison.ComparisonCondition" line="18"/>
+        <if>
+            <less>
+                <ref var="strval"/>
+                <const value="XZ"/>
+            </less>
+        </if>
+        <print location="both">
+            <params>
+                <const value="stop-2. strval="/>
+                <ref var="strval"/>
+                <const value=" less then XZ"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

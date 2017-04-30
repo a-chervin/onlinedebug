@@ -1,0 +1,1 @@
+innerInt: 7   innerStaticInt: 8   encloser.counter: 5   encloser.statCounter: 6

@@ -1,0 +1,49 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <entry>
+        <methodEntry constructor="true"
+                     class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.ConstructorMethod$CtorTest">
+        </methodEntry>
+        <assign>
+            <ref class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.ConstructorMethod$CtorTest"
+                 var="counter"/>
+            <value><const value="7"/></value>
+        </assign>
+    </entry>
+    <entry>
+        <methodEntry constructor="true"
+                     class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.ConstructorMethod$CtorTest">
+            <params>
+                <arg class="java.lang.String"/>
+            </params>
+        </methodEntry>
+        <assign>
+            <ref class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.ConstructorMethod$CtorTest"
+                 var="counter"/>
+            <value><const value="8"/></value>
+        </assign>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.ConstructorMethod" line="22"/>
+        <print location="both">
+            <params>
+                <ref class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.ConstructorMethod$CtorTest" var="counter"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.ConstructorMethod" line="24"/>
+        <print location="both">
+            <params>
+                <ref class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.ConstructorMethod$CtorTest" var="counter"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.ConstructorMethod" line="26"/>
+        <print location="both">
+            <params>
+                <ref class="xryusha.onlinedebug.testcases.breakpoints.methodrelated.ConstructorMethod$CtorTest" var="counter"/>
+            </params>
+        </print>
+    </entry>
+</configuration>
