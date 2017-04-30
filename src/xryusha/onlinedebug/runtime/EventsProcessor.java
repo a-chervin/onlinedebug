@@ -15,7 +15,7 @@ import xryusha.onlinedebug.util.Log;
 import xryusha.onlinedebug.runtime.util.DaemonThreadFactory;
 
 /**
- * starts and manages event process handling process
+ * starts and manages event handling process
  */
 public class EventsProcessor
 {
