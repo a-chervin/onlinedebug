@@ -16,6 +16,9 @@ import xryusha.onlinedebug.runtime.RemotingBase;
 import xryusha.onlinedebug.runtime.SyntheticRValue;
 
 
+/**
+ * Evaluates condition statement
+ */
 public class ConditionEvaluator extends RemotingBase
 {
     private  Map<Class, BiPredicate<ThreadReference, AbstractConditionSpec>> evaluators;
@@ -35,32 +38,13 @@ public class ConditionEvaluator extends RemotingBase
         comparableCompareChain = constructCompareCall();
     }
 
-    private List<RValue> constructCompareCall()
-    {
-        SyntheticRValue thisVal = new SyntheticRValue();
-        List<RValue> chain = new ArrayList<>(2);
-        chain.add(thisVal);
-        // verify magic strings
-        java.lang.reflect.Method compareTo = null;
-        try {
-            compareTo = Comparable.class.getMethod("compareTo", new Class[]{Object.class});
-        } catch (Exception ex) {
-            String msg = "code error: Comparable.compare method not found";
-            log.log(Level.SEVERE, msg);
-            throw new RuntimeException(msg);
-        }
-
-        CallSpec compareCall = new CallSpec();
-        compareCall.setMethod(compareTo.getName());
-        compareCall.setTargetClass(compareTo.getDeclaringClass().getName());
-
-        SyntheticRValue that = new SyntheticRValue();
-        that.setType(Object.class.getName());
-        compareCall.getParams().add(that);
-        chain.add(compareCall);
-        return chain;
-    } // constructCompareCall
-
+    /**
+     * Evaluates condition
+     * @param thread
+     * @param condition
+     * @return evaluation result
+     * @throws Exception
+     */
     public boolean evaluate(ThreadReference thread, AbstractConditionSpec condition) throws Exception
     {
         try {
@@ -174,6 +158,13 @@ public class ConditionEvaluator extends RemotingBase
         return match;
     }
 
+    /**
+     * Evaluate relation
+     * @param thread
+     * @param relation (less/equal)
+     * @return
+     * @throws RuntimeException
+     */
     protected ComparationResult evaluateRelation(ThreadReference thread, RelationConditionSpec relation) throws RuntimeException
     {
         Value lval, rval;
@@ -213,6 +204,35 @@ public class ConditionEvaluator extends RemotingBase
         }
     } // evaluateEquals
 
+    /**
+     * Constructs a.compareTo(b) call template
+     * @return
+     */
+    private List<RValue> constructCompareCall()
+    {
+        SyntheticRValue thisVal = new SyntheticRValue();
+        List<RValue> chain = new ArrayList<>(2);
+        chain.add(thisVal);
+        // verify magic strings
+        java.lang.reflect.Method compareTo = null;
+        try {
+            compareTo = Comparable.class.getMethod("compareTo", new Class[]{Object.class});
+        } catch (Exception ex) {
+            String msg = "code error: Comparable.compare method not found";
+            log.log(Level.SEVERE, msg);
+            throw new RuntimeException(msg);
+        }
+
+        CallSpec compareCall = new CallSpec();
+        compareCall.setMethod(compareTo.getName());
+        compareCall.setTargetClass(compareTo.getDeclaringClass().getName());
+
+        SyntheticRValue that = new SyntheticRValue();
+        that.setType(Object.class.getName());
+        compareCall.getParams().add(that);
+        chain.add(compareCall);
+        return chain;
+    } // constructCompareCall
 
     protected static class ComparationResult
     {

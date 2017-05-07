@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Build-Jdk: 1.8
+Built-By: maven
+Main-Class: xryusha.onlinedebug.Main
+

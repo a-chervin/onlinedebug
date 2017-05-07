@@ -1,0 +1,149 @@
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <!--
+       <entry> element structure:
+       1. breakpoint
+       2. optional - conditions
+       3. actions to be performed, may be more than 1
+    -->
+
+    <!--
+       conditions
+     =========================
+       supported types:
+        <equal/>
+        <less/>
+        <isnull/>
+        <and/>
+        <or/>
+
+        all of conditions support attribute "inverse" (NOT)
+    -->
+
+    <!-- ========================================== -->
+    <!-- <equal>                                 -->
+    <!-- ========================================== -->
+    <!--
+        execute <print/> statement if variables
+        "nowDate" and "beforeDate" are equal
+    -->
+    <entry>
+        <atLocation class="testcases.actions.InvokeAction" line="27"/>
+        <if>
+            <equal>
+                <ref var="nowDate"/>
+                <ref var="beforeDate"/>
+            </equal>
+        </if>
+        <print location="both">
+            <params>
+                <const value="stop-1. equal dates"/>
+            </params>
+        </print>
+    </entry>
+
+    <!--
+        execute <print/> statement if variable
+        "name" NOT equals "Elthon"
+    -->
+    <entry>
+        <atLocation class="testcases.actions.InvokeAction" line="27"/>
+        <if>
+            <equal inverse="true">
+                <ref var="name"/>
+                <const value="Elthon"/>
+            </equal>
+        </if>
+        <print location="both">
+            <params>
+                <const value="stop-1. equal dates"/>
+            </params>
+        </print>
+    </entry>
+
+    <!-- =========================================== -->
+    <!-- <less>                                      -->
+    <!--   uses natural comparators for primitives   -->
+    <!--   otherwise supposes objects are Comparable -->
+    <!-- =========================================== -->
+    <!--
+        execute <print/> statement if variable
+        "val" less then 0.
+    -->
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.comparison.ComparisonCondition" line="11"/>
+        <if>
+            <less>
+                <ref var="val"/>
+                <const value="0" class="int"/>
+            </less>
+        </if>
+        <print location="both">
+            <params>
+                <const value="val less -1"/>
+            </params>
+        </print>
+    </entry>
+
+    <!-- =========================================== -->
+    <!-- <and> , <or>                                -->
+    <!-- =========================================== -->
+    <!--
+       execute <print> if v1 equals 1 and v2 equals 1
+    -->
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.comparison.ComparisonCondition" line="11"/>
+        <if>
+            <and>
+                <equal>
+                    <ref var="v1"/>
+                    <const value="1" class="int"/>
+                </equal>
+                <equal>
+                    <ref var="v2"/>
+                    <const value="1" class="int"/>
+                </equal>
+            </and>
+        </if>
+        <print location="both">
+            <params>
+                <const value="v1==1 and v2==1"/>
+            </params>
+        </print>
+    </entry>
+
+    <!--
+       nested
+    -->
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.grouping.ComplexCondition" line="14"/>
+        <if>  <!-- ((v1==2&&v2==4)||(v1==7&&v2==5)) ==> false -->
+            <or>
+                <and>
+                    <equal>
+                        <ref var="v1"/>
+                        <const value="2" class="int"/>
+                    </equal>
+                    <equal>
+                        <ref var="v2"/>
+                        <const value="4" class="int"/>
+                    </equal>
+                </and>
+                <and>
+                    <equal>
+                        <ref var="v1"/>
+                        <const value="7" class="int"/>
+                    </equal>
+                    <equal>
+                        <ref var="v2"/>
+                        <const value="5" class="int"/>
+                    </equal>
+                </and>
+            </or>
+        </if>
+        <print location="both">
+            <params>
+                <const value="stop-1. ((v1==2 and v2==4) or (v1==7 and v2==5))"/>
+            </params>
+        </print>
+    </entry>
+</configuration>
