@@ -589,7 +589,7 @@ public class PrintAction extends Action<PrintSpec>
         public String submit(String format, Object[] args) throws Exception
         {
             final String message = String.format(format, args);
-            Future future = appender.submit(new Callable<Void>() {
+            final Future future = appender.submit(new Callable<Void>() {
                                                 public Void call() throws Exception
                                                 {
                                                     target.println(message) ;
