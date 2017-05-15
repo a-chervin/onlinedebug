@@ -46,10 +46,32 @@ public class AsyncWriter implements ThreadFactory
 
     public String submit(String format, Object[] args) throws Exception
     {
-        String str = String.format(format, args);
-        Future future = appender.submit( new PrintingTask(target, str));
-        verifier.submit(new VerifyingTask(future));
-        return str;
+        final String message = String.format(format, args);
+        Future future = appender.submit(new Callable<Void>() {
+                                            public Void call() throws Exception
+                                            {
+                                                target.println(message) ;
+                                                return null;
+                                            }
+                                        });
+        verifier.submit(new Runnable() {
+                            public void run() {
+                                try {
+                                    future.get();
+                                } catch (Throwable th) {
+                                    ByteArrayOutputStream baos =
+                                               new ByteArrayOutputStream();
+                                    PrintStream ps = new PrintStream(baos);
+                                    ps.println("Append task failed: ");
+                                    th.printStackTrace(ps);
+                                    ps.flush();
+                                    String str = baos.toString();
+                                    System.err.println(str);
+                                }
+                    } // run
+                } // Runnable
+               );
+        return message;
     }
 
     @Override

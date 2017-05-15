@@ -5,6 +5,8 @@ import java.net.*;
 import java.nio.charset.Charset;
 import java.nio.charset.spi.CharsetProvider;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
@@ -208,25 +210,20 @@ public class RemoteInstaller extends RemotingBase
 
     private class InstallingHandler implements HttpHandler
     {
-        private Class serviceClass;
-        private String implementationClassName;
-        private String implementationClassFile;
-        private byte[] implementation;
+        private ConcurrentMap<String,byte[]> pendingUploads = new ConcurrentHashMap<>();
 
 
         public synchronized void publish(Class serviceClass, String implementationClassName, byte[] implementation, Runnable loadingTrigger) throws Exception
         {
-            this.serviceClass = serviceClass;
-            this.implementationClassName = implementationClassName;
-            implementationClassFile = implementationClassName.replace('.', '/') + ".class";
-            this.implementation =  implementation.clone();
+            String metaName = "META-INF/services/"+serviceClass.getName();
+            pendingUploads.put(metaName, implementationClassName.getBytes());
+            String implClassFilename = implementationClassName.replace('.', '/') + ".class";
+            pendingUploads.put(implClassFilename, implementation.clone());
             try {
                 loadingTrigger.run();
             } finally {
-                this.serviceClass = null;
-                this.implementationClassName = null;
-                this.implementationClassFile = null;
-                this.implementation =  null;
+                pendingUploads.remove(metaName);
+                pendingUploads.remove(implClassFilename);
             }
         } //  publish
 
@@ -249,30 +246,48 @@ public class RemoteInstaller extends RemotingBase
             else
                 httpExchange.sendResponseHeaders(HttpURLConnection.HTTP_NOT_FOUND, 0);
 
-            log.log(Level.FINE, "ServiceInstallingHandler::handle request: {0} , response.size: ",
+            log.log(Level.FINE, "ServiceInstallingHandler::handle request: {0} , response.size: {1}",
                     new Object[]{resource, responseData != null ? responseData.length : 0});
             os.flush();
             os.close();
         }
 
+        private String[] localOnly = new String[] {
+                "java/",
+                "javax/",
+                "jdk/",
+                "com/oracle/",
+                "com/sun/",
+                "sun/",
+        };
+
         byte[] getResponse(String path) throws IOException
         {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            String metaName = "META-INF/services/"+serviceClass.getName();
-            if ( metaName.equals(path)) {
-                baos.write(implementationClassName.getBytes());
-            } else if ( path.equals(implementationClassFile)) {
-                baos.write(implementation);
-            } else { // one of classes referenced by implmenetor
+            for(String name: localOnly) {
+                if ( path.startsWith(name) ) {
+                    log.log(Level.FINE,
+                             ()->"ServiceInstallingHandler.getResponse: ignorring request for "
+                                  + path);
+                    return null;
+                }
+            }
+            ByteArrayOutputStream baos = null;
+            byte[] pendings = pendingUploads.get(path);
+            if ( pendings != null ) {
+                baos = new ByteArrayOutputStream();
+                baos.write(pendings);
+            }
+            else { // one of classes referenced by implmenetor
                 ClassLoader cl = Thread.currentThread().getContextClassLoader();
                 InputStream is = cl.getResourceAsStream(path);
                 if ( is != null ) {
+                    baos = new ByteArrayOutputStream();
                     for(int ch = is.read(); ch != -1; ch = is.read())
                         baos.write(ch);
                     is.close();
                 }
             }
-            byte[] res = baos.size() > 0 ? baos.toByteArray() : null;
+            byte[] res = baos != null && baos.size() > 0 ? baos.toByteArray() : null;
             return res;
         } // getResponse
     } // ServiceInstallingHandler

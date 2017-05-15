@@ -16,8 +16,6 @@ import xryusha.onlinedebug.config.values.eventspecific.ModificationNew;
 import xryusha.onlinedebug.config.values.eventspecific.ReturnValue;
 import xryusha.onlinedebug.runtime.PrimitiveValueFactory;
 import xryusha.onlinedebug.runtime.actions.print.AsyncWriter;
-import xryusha.onlinedebug.runtime.actions.print.PrintingTask;
-import xryusha.onlinedebug.runtime.actions.print.VerifyingTask;
 import xryusha.onlinedebug.runtime.util.RemoteInstaller;
 import xryusha.onlinedebug.config.values.*;
 import xryusha.onlinedebug.runtime.ExecutionContext;
@@ -81,7 +79,7 @@ public class PrintAction extends Action<PrintSpec>
         RemoteInstaller installer = RemoteInstaller.getInstance();
         try {
             if ( isAsyncWriterInstalled == null ) {
-                installer.install(thread, Arrays.asList(AsyncWriter.class, PrintingTask.class, VerifyingTask.class));
+                installer.install(thread, Arrays.asList(AsyncWriter.class/*, PrintingTask.class, VerifyingTask.class*/));
                 isAsyncWriterInstalled = Boolean.TRUE;
                 log.log(Level.FINE, "remote AsyncWriter installed");
             }
