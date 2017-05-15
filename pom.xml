@@ -57,6 +57,7 @@
                 <includes>
                     <include>**/*.xsd</include>
                     <include>**/*.template</include>
+                    <include>META-INF/**</include>
                 </includes>
             </resource>
             <resource>

@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class ExecutionContext
 {
-    private static ConcurrentMap<String,ExecutionContext> contexts = new ConcurrentHashMap();
+    private static ConcurrentMap<String,ExecutionContext> contexts = new ConcurrentHashMap<>();
 
     private Map<String,Object> contextData = new HashMap<>();
     private long receiveTime;

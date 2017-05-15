@@ -1,10 +1,12 @@
 package xryusha.onlinedebug.runtime;
 
+import java.util.*;
+import java.util.concurrent.atomic.*;
+
 import xryusha.onlinedebug.config.ConfigEntry;
 import xryusha.onlinedebug.runtime.actions.Action;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
+
 
 /**
  * Describes all configurations of particular event type, used by event specific handler
@@ -37,11 +39,14 @@ public class HandlerData
     }
 
 
-    // Runtime data regarding one configuration entry (config itself and parsed and chached action objects)
+    // Runtime data regarding one configuration entry (config itself and parsed and cached action objects)
     public class RuntimeConfig
     {
         private final ConfigEntry configEntry;
         private AtomicReference<List<Action>> actionsRef = new AtomicReference<>();
+        private AtomicLong conditionCheckCounter = new AtomicLong(0);
+        private AtomicLong actionUseCounter = new AtomicLong(0);
+
 
         private RuntimeConfig(ConfigEntry configEntry)
         {
@@ -70,5 +75,18 @@ public class HandlerData
             boolean replaced = actionsRef.compareAndSet(null, safe);
             return replaced;
         }
+
+        public void conditionChecked()
+        { conditionCheckCounter.incrementAndGet(); }
+
+        public long  getConditionChecks()
+        { return conditionCheckCounter.longValue(); }
+
+        public void actionUsed()
+        { actionUseCounter.incrementAndGet(); }
+
+        public long getActionUse()
+        { return actionUseCounter.longValue(); }
+
     }
 } // HandlerData

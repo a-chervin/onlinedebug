@@ -11,6 +11,7 @@ import xryusha.onlinedebug.config.ConfigEntry;
 import xryusha.onlinedebug.config.Configuration;
 import xryusha.onlinedebug.config.actions.ActionSpec;
 import xryusha.onlinedebug.config.breakpoints.AbstractBreakPointSpec;
+import xryusha.onlinedebug.runtime.handlers.optimize.Optimizer;
 import xryusha.onlinedebug.util.Log;
 import xryusha.onlinedebug.runtime.ExecutionContext;
 import xryusha.onlinedebug.runtime.HandlerData;
@@ -26,6 +27,7 @@ public abstract class EventHandlerBase<P extends AbstractBreakPointSpec, E exten
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
     protected final Class<? extends AbstractBreakPointSpec> configSpecClass;
     protected final Class<? extends LocatableEvent> handledEventClass;
+    protected final List<Optimizer> optimizers;
 
 
     protected EventHandlerBase(Configuration configuration) throws Exception
@@ -40,6 +42,13 @@ public abstract class EventHandlerBase<P extends AbstractBreakPointSpec, E exten
         configSpecClass = (Class<? extends AbstractBreakPointSpec>) Class.forName(realSpecType.getTypeName());
         Type eventType = handlerBaseType.getActualTypeArguments()[1];
         handledEventClass = (Class<? extends LocatableEvent>) Class.forName(eventType.getTypeName());
+        ArrayList optimizersList = new ArrayList<>();
+        ServiceLoader<Optimizer> optimizersLoader = ServiceLoader.load(Optimizer.class);
+        for ( Iterator<Optimizer> itr = optimizersLoader.iterator(); itr.hasNext();) {
+            Optimizer opt = itr.next();
+            optimizersList.add(opt);
+        }
+        optimizers = optimizersList;
     } // ctor
 
 
@@ -61,8 +70,17 @@ public abstract class EventHandlerBase<P extends AbstractBreakPointSpec, E exten
 
     protected void handle(E event, HandlerData.RuntimeConfig runtimeConfig, ExecutionContext ctx) throws Exception
     {
+        ThreadReference thread = event.thread();
         ConfigEntry config = runtimeConfig.getConfigEntry();
         if ( config.getCondition() != null ) {
+            try {
+                for(Optimizer opt: optimizers) {
+                    opt.condition(thread, runtimeConfig);
+                }
+            } catch(Throwable th) {
+                // ok, optimiziation failed, use it as it
+                log.log(Level.WARNING, "condition optimiztion failed", th);
+            }
             try {
                 boolean match = conditionEvaluator.evaluate(event.thread(), config.getCondition());
                 if ( !match ) {
@@ -78,7 +96,6 @@ public abstract class EventHandlerBase<P extends AbstractBreakPointSpec, E exten
                 return;
             }
         } // if condition
-        ThreadReference thread = event.thread();
         List<Action> actions;
         if ( (actions = runtimeConfig.getActions())== null ) {
             actions = new ArrayList<>();
@@ -89,6 +106,15 @@ public abstract class EventHandlerBase<P extends AbstractBreakPointSpec, E exten
             runtimeConfig.setActions(actions);
         } // if runtimeConfig.getActions()== null
 
+        try {
+            for (Optimizer opt : optimizers) {
+                opt.actions(thread, runtimeConfig);
+            }
+        }
+        catch(Throwable th) {
+            // ok, optimization failed, use it as it
+            log.log(Level.WARNING, "actions optimization failed", th);
+        }
         for(Action action: actions) {
             try {
                 action.execute(event, ctx);

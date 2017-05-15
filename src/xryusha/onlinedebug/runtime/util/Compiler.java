@@ -32,18 +32,6 @@ public enum Compiler
             options.addAll(Arrays.asList("-source", vmVersion, "-target", vmVersion));
         }
 
-//while(Integer.parseInt("5") == 5) {
-//    ArrayList opts = new ArrayList(Arrays.asList("-g", "-source", vmVersion, "-target", vmVersion));
-//    DiagnosticCollector<JavaFileObject> Tdiagnostics = new DiagnosticCollector<>();
-//    JavaCompiler.CompilationTask task = compiler.getTask(null, memoryMgr, Tdiagnostics, opts, null, list);
-//    boolean ok = task.call();
-//    if ( !ok ) {
-//        for (Diagnostic diagnostic : diagnostics.getDiagnostics()) {
-//            System.out.println(diagnostic);
-//        }
-//    }
-//}
-
         JavaCompiler.CompilationTask task = compiler.getTask(null, memoryMgr, diagnostics, options, null, list);
         boolean success = task.call();
         if ( !success ) {
