@@ -43,7 +43,7 @@ public class Main
     public static void main(String[] args) throws Exception
     {
 /* */
-/* */
+/*
         args = new String[]{
                  "-debug",
 //                 "-skip",
@@ -56,7 +56,7 @@ public class Main
 //                    "xryusha\\onlinedebug\\testcases\\actions\\ReturnOnException.xml"
                       "xryusha\\onlinedebug\\testcases\\local\\LocalVars.xml"
         };
-/* */
+ */
 
 
         if ( args == null || args.length == 0 ) {
