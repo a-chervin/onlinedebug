@@ -5,20 +5,14 @@ import xryusha.onlinedebug.config.actions.ActionSpec;
 import xryusha.onlinedebug.runtime.ExecutionContext;
 import xryusha.onlinedebug.runtime.actions.Action;
 
-public class OptimizedAction extends Action
+public abstract class AbstractOptimizedAction extends Action
 {
     private final String remoteActionClass;
 
-    public OptimizedAction(ActionSpec spec, String remoteActionClass)
+    public AbstractOptimizedAction(ActionSpec spec, String remoteActionClass)
     {
         super(spec);
 
         this.remoteActionClass = remoteActionClass;
-    }
-
-    @Override
-    public void execute(LocatableEvent event, ExecutionContext ctx) throws Exception
-    {
-
     }
 }

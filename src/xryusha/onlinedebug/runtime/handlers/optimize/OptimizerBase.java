@@ -12,7 +12,7 @@ public class OptimizerBase implements Optimizer
     {
         if (  runtimeConfig.getConfigEntry().getCondition() == null ||
                runtimeConfig.getConditionChecks() < optimizationTreshold ||
-                 runtimeConfig.getConfigEntry().getCondition() instanceof OptimizedCondition )
+                 runtimeConfig.getConfigEntry().getCondition() instanceof AbstractOptimizedCondition)
         return;
         _condition(thread, runtimeConfig);
         runtimeConfig.conditionChecked();
@@ -24,7 +24,7 @@ public class OptimizerBase implements Optimizer
         if ( runtimeConfig.getActionUse() < optimizationTreshold ||
                 runtimeConfig.getActions() == null ||
                 runtimeConfig.getActions().size() == 0 ||
-                runtimeConfig.getActions().get(0) instanceof OptimizedAction )
+                runtimeConfig.getActions().get(0) instanceof AbstractOptimizedAction)
             return;
 
         _actions(thread, runtimeConfig);
