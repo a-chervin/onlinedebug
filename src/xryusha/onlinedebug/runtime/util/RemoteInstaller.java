@@ -117,8 +117,8 @@ public class RemoteInstaller extends RemotingBase
 
         // padding class list string to placeholder size
         for(int inx = missingList.length();
-            inx < RemoteLoader_XXXXXXXXXXXXXXXX.placeHolder.length(); inx++)
-            missingList.append(" ");
+                 inx < RemoteLoader_XXXXXXXXXXXXXXXX.placeHolder.length(); inx++)
+                    missingList.append(" ");
 
         String updatedSimpleClassName =
                 RemoteLoader_XXXXXXXXXXXXXXXX.class.getSimpleName()
