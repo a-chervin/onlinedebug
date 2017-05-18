@@ -31,8 +31,9 @@ import xryusha.onlinedebug.config.values.*;
  *  - invoking remotely {@link Charset#forName(String)}} with non-existing charset name.
  *    As the {@link ServiceLoader} is called it makes requests to ours server to obtain
  *    META-INF/services/java.nio.charset.spi.CharsetProvider file which should contain list
- *    of implementations. We return this file with name of onfly generated and compiled class
- *    implementing the interface, but all it performes is calling {@link Class#forName(String)}
+ *    of implementations. We return this file with name of onfly patched class {@link RemoteLoader_XXXXXXXXXXXXXXXX}
+ *    where patching is changing it's name and replacing placeholder string with classnames
+ *    The class implements the interface, but all it performes is calling {@link Class#forName(String)}
  *    for each one of classes to be installed. As a result remote VM decides by itself to download
  *    these classes.
  *    <i>Note</i>: Basically we could use another service interface (even {@link Runnable} or
@@ -44,19 +45,20 @@ import xryusha.onlinedebug.config.values.*;
 public class RemoteInstaller extends RemotingBase
 {
     private final static String INSTALLER_ROOT = "/installer";
-    private final static String TEMPLATE_FILE = "RemoteLoader.template";
-    private final static String PACKAGE_TOKEN = "{{PACKAGE}}";
-    private final static String FILENAME_TOKEN = "{{CLASSNAME}}";
-    private final static String CLASSES_TOKEN = "{{CLASSES}}";
-    private final static AtomicInteger loadersCount = new AtomicInteger(1);
+    private final static Charset oneByteCharset =  Charset.forName("ISO-8859-1");
+    private final static AtomicInteger loadersCount = new AtomicInteger(0);
 
-    private static RemoteInstaller instance;
     private final String serverURL;
     private final InstallingHandler  patchinghandler;
+    private final byte[] loaderTemplate;
 
     public static RemoteInstaller getInstance() throws IOException
     {
         return installerHolder.Instance.get();
+    }
+
+    public void init() throws Exception
+    {
     }
 
     // java out-of-box singleton implementation
@@ -88,26 +90,57 @@ public class RemoteInstaller extends RemotingBase
         HttpServer server = HttpServer.create(new InetSocketAddress(host, freePort), 0);
         server.createContext(INSTALLER_ROOT, patchinghandler);
         server.start();
-        new Thread(()->warmUp()).start();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        String resName =
+                RemoteLoader_XXXXXXXXXXXXXXXX.class.getName().replace(".","/")+".class";
+        try (InputStream is =
+                  Thread.currentThread().getContextClassLoader().getResourceAsStream(resName)){
+            for(int ch; (ch = is.read()) != -1; baos.write(ch));
+        }
+
+        loaderTemplate = baos.toByteArray();
     }
 
     public void install(ThreadReference thread, List<Class> classes) throws Exception
     {
         VirtualMachine vm = thread.virtualMachine();
-        ArrayList<Class> missingClasses = new ArrayList<>();
+        StringBuffer missingList = new StringBuffer();
         for(Class clazz: classes ) {
-            if ( vm.classesByName(clazz.getName()).isEmpty() )
-                missingClasses.add(clazz);
+            if ( vm.classesByName(clazz.getName()).isEmpty() ) {
+                missingList.append(clazz.getName()).append(" ");
+            }
         }
-        if ( missingClasses.isEmpty() )
+        if ( missingList.length() == 0 )
             return;
-        String[] generated = generateLoaderCode(missingClasses);
-        String className = generated[0];
-        String code = generated[1];
-        byte[] compiled = Compiler.INSTANCE.compile(className, code, "1.6");
+        if ( missingList.length() > RemoteLoader_XXXXXXXXXXXXXXXX.placeHolder.length() )
+            throw new IllegalArgumentException("classes list is too long");
+
+        // padding class list string to placeholder size
+        for(int inx = missingList.length();
+            inx < RemoteLoader_XXXXXXXXXXXXXXXX.placeHolder.length(); inx++)
+            missingList.append(" ");
+
+        String updatedSimpleClassName =
+                RemoteLoader_XXXXXXXXXXXXXXXX.class.getSimpleName()
+                        .replace("_XXXXXXXXXXXXXXXX",
+                                 String.format("_%04d%012x",
+                                        loadersCount.getAndIncrement(),
+                                        System.currentTimeMillis()).toUpperCase());
+        String updatedClassName =
+                RemoteLoader_XXXXXXXXXXXXXXXX.class.getName()
+                               .replace(RemoteLoader_XXXXXXXXXXXXXXXX.class.getSimpleName(),
+                                        updatedSimpleClassName);
+        byte[] updatedClassContent =
+                  new String(loaderTemplate, oneByteCharset)
+                    .replace(RemoteLoader_XXXXXXXXXXXXXXXX.class.getSimpleName(),
+                                     updatedSimpleClassName)
+                    .replace(RemoteLoader_XXXXXXXXXXXXXXXX.placeHolder,
+                                     missingList.toString())
+                           .getBytes(oneByteCharset);
+
         ObjectReference urlClassloader = getClassLoader(thread);
         patchClassLoaderIfNeeded(thread, urlClassloader);
-        patchinghandler.publish(CharsetProvider.class, className, compiled, () -> {
+        patchinghandler.publish(CharsetProvider.class, updatedClassName, updatedClassContent, () -> {
                     CallSpec charsetForName = new CallSpec(Charset.class.getName(), "forName");
                     charsetForName.getParams().add(new Const("NOSUCH"+System.currentTimeMillis()));
                     try {
@@ -117,18 +150,6 @@ public class RemoteInstaller extends RemotingBase
                 });
     } // install
 
-    private void warmUp()
-    {
-        try {
-            String[]generated = generateLoaderCode(Arrays.asList(this.getClass()));
-            String className = generated[0];
-            String code = generated[1];
-            Compiler.INSTANCE.compile(className, code, "1.6");
-        } catch (Throwable ex){
-            System.err.println("RemoteInstaller.warmUp() fail: ");
-            ex.printStackTrace();
-        }
-    }
 
     private ObjectReference getClassLoader(ThreadReference thread) throws Exception
     {
@@ -170,43 +191,6 @@ public class RemoteInstaller extends RemotingBase
         addUrlChain.getRef().add(addUrl);
         getValue(thread, addUrlChain);
     } // patchClassLoaderIfNeeded
-
-
-    private String[] generateLoaderCode(List<Class> classes) throws IOException
-    {
-        String loadedTemplate;
-        try (InputStream template = getClass().getResourceAsStream(TEMPLATE_FILE)){
-            if ( template == null )
-                throw new FileNotFoundException(TEMPLATE_FILE);
-            StringWriter swr = new StringWriter();
-            for(int ch = template.read(); ch != -1; ch = template.read())
-                swr.write(ch);
-            loadedTemplate = swr.toString();
-        }
-        String rnd = Long.toHexString(System.currentTimeMillis()).toUpperCase();
-        String className = "RemoteLoader_"
-                + classes.get(0).getSimpleName()
-                + "_" + loadersCount.getAndIncrement()
-                + "_" + rnd;
-        String packaged = loadedTemplate.replace(PACKAGE_TOKEN, "onlinedebug.runtime.installer");
-        String renamed = packaged.replace(FILENAME_TOKEN, className);
-        String qualifiedName = "onlinedebug.runtime.installer." + className;
-
-
-        StringBuilder sb = new StringBuilder();
-        for(int inx = 0; inx < classes.size(); inx++ ) {
-            Class clazz = classes.get(inx);
-            if ( inx > 0 )
-                sb.append(", ");
-            sb.append('"')
-                    .append(clazz.getName())
-                    .append('"');
-        } // all classes
-        String classesList = sb.toString();
-        String ready = renamed.replace(CLASSES_TOKEN, classesList);
-        return new String[]{qualifiedName, ready};
-    } // generateLoaderCode
-
 
     private class InstallingHandler implements HttpHandler
     {
@@ -279,16 +263,77 @@ public class RemoteInstaller extends RemotingBase
             }
             else { // one of classes referenced by implmenetor
                 ClassLoader cl = Thread.currentThread().getContextClassLoader();
-                InputStream is = cl.getResourceAsStream(path);
-                if ( is != null ) {
-                    baos = new ByteArrayOutputStream();
-                    for(int ch = is.read(); ch != -1; ch = is.read())
-                        baos.write(ch);
-                    is.close();
+                try (InputStream is = cl.getResourceAsStream(path)) {
+                    if ( is != null ) {
+                        baos = new ByteArrayOutputStream();
+                        for(int ch = is.read(); ch != -1; ch = is.read())
+                            baos.write(ch);
+                    }
                 }
             }
             byte[] res = baos != null && baos.size() > 0 ? baos.toByteArray() : null;
             return res;
         } // getResponse
     } // ServiceInstallingHandler
+
+                                     /* length of hex digits of long */
+    public static class RemoteLoader_XXXXXXXXXXXXXXXX extends CharsetProvider
+    {
+        // veeery long placeholder body to be replaced
+        // ISO-8859-1
+        private final static String placeholderElement = "{placeholder}";
+        private static String placeHolder =
+                  placeholderElement + placeholderElement + placeholderElement
+                + placeholderElement + placeholderElement + placeholderElement
+                + placeholderElement + placeholderElement + placeholderElement
+                + placeholderElement + placeholderElement + placeholderElement
+                + placeholderElement + placeholderElement + placeholderElement
+                + placeholderElement + placeholderElement + placeholderElement
+                + placeholderElement + placeholderElement + placeholderElement
+                + placeholderElement + placeholderElement + placeholderElement
+                + placeholderElement + placeholderElement + placeholderElement
+                + placeholderElement + placeholderElement + placeholderElement
+                + placeholderElement + placeholderElement + placeholderElement
+                ;
+
+        @Override
+        public Iterator<Charset> charsets()
+        {
+            load();
+            return null;
+        }
+
+        @Override
+        public Charset charsetForName(String charsetName)
+        {
+            load();
+            return null;
+        }
+
+        private void load()
+        {
+            StringTokenizer st = new StringTokenizer(placeHolder, " ");
+            ArrayList<String> failed = new ArrayList<>();
+            ArrayList<String> suceeded = new ArrayList<>();
+            while(st.hasMoreElements()) {
+                String name = st.nextToken();
+                try {
+                    Class<?> clz = Class.forName(name);
+                    suceeded.add(name);
+                } catch (Throwable ex) {
+                    failed.add(name);
+                }
+            }
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw, true);
+            pw.println("==== remote loading ====");
+            if (!suceeded.isEmpty())
+                pw.println("  Successfully loaded: " + suceeded);
+            if (!failed.isEmpty())
+                pw.println("  Failed loading: " + failed);
+            pw.println("========================");
+            pw.flush();
+            System.out.println(sw);
+        } // load
+    } // RemoteLoader_XXXXXXXXXXXXXXXX
 }

@@ -69,7 +69,7 @@ public class RemotingBase
             return _getValue(thread, Arrays.asList(value));
         } catch (Exception ex) {
             if ( swallowException ) {
-                log.log(Level.INFO, "ignorring failure to evaluate : " + value);
+                log.log(Level.FINE, "ignorring failure to evaluate : " + value);
                 return null;
             }
             throw ex;
