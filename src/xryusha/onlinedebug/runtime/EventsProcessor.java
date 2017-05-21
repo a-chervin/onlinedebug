@@ -80,11 +80,9 @@ public class EventsProcessor
             // if thread non-bounded events (e.g. ClassPrepareEvent) fired,
             // full events.resume() should be called (no thread for thread.resume())
             final boolean nonBoundExists = eventGroups.containsKey(nullThread);
-            final CountDownLatch cdl = /*nonBoundExists ?
+            final CountDownLatch cdl = nonBoundExists ?
                                          new CountDownLatch(pending.size()) :
-                                           null*/
-                                       new CountDownLatch(pending.size())
-                    ;
+                                           null;
             for(Map.Entry<ThreadReference,List<Event>> group : eventGroups.entrySet()) {
                 ThreadReference thread = group.getKey();
                 List<Event> threadEvents = group.getValue();
