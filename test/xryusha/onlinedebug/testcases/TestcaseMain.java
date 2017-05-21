@@ -9,6 +9,7 @@ public class TestcaseMain
         Flow flw = flowclazz.newInstance();
         while(true) {
             try {
+                System.out.println("----");
                 flw.reset();
                 flw.call();
             } catch (Throwable th) {

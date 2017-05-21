@@ -1,8 +1,6 @@
 package xryusha.onlinedebug.runtime;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,6 +19,8 @@ import com.sun.jdi.connect.IllegalConnectorArgumentsException;
 import com.sun.jdi.request.*;
 import xryusha.onlinedebug.config.ConfigEntry;
 import xryusha.onlinedebug.exceptions.RemoteFieldNotFoundException;
+import xryusha.onlinedebug.runtime.util.AsyncRemoteExecutor;
+import xryusha.onlinedebug.runtime.util.RemoteInstaller;
 import xryusha.onlinedebug.util.Log;
 import xryusha.onlinedebug.exceptions.RemoteClassNotFoundException;
 import xryusha.onlinedebug.runtime.func.ErrorproneFunction;
@@ -74,6 +74,11 @@ public class RemoteJVM
         portArg.setValue(port);
         remoteVM = socConn.attach(params);
         vms.put(remoteVM, this);
+        try {
+            RemoteInstaller.getInstance().init();
+        } catch (Throwable th) {
+            log.log(Level.SEVERE, "RemoteInstaller initialization fail", th);
+        }
     }
 
     public VirtualMachine getRemoteVM()
@@ -95,6 +100,7 @@ public class RemoteJVM
         for(ConfigEntry configEntry : configuration.getEntries()) {
             apply(configEntry);
         }
+//        apply(AsyncRemoteExecutor.getInstance().getConfig());
         return postponed;
     } // compile Configuration
 
@@ -342,6 +348,50 @@ public class RemoteJVM
         return true;
     } // install MethodEntryBreakPointSpec
 
+
+/*
+
+    // TODO L
+    // TODO L
+    // TODO L
+    private boolean installRemoteExecutor() throws Exception
+    {
+        final ThreadReference finalizer =
+                remoteVM.allThreads().stream()
+                                     .filter(t->t.name().equals("Finalizer"))
+                                     .findAny().get();
+        finalizer.interrupt();
+//        ReferenceType interrupEx =
+//                remoteVM.classesByName(InterruptedException.class.getName()).get(0);
+//        ExceptionRequest erx = remoteVM.eventRequestManager()
+//                .createExceptionRequest(interrupEx, true, true);
+//        erx.addThreadFilter(finalizer);
+//        StepRequest erx = remoteVM.eventRequestManager()
+//                .createStepRequest(finalizer, StepRequest.STEP_LINE,
+//                        StepRequest.STEP_OVER);
+//        erx.addThreadFilter(finalizer);
+        MethodEntryRequest req =  remoteVM.eventRequestManager()
+                .createMethodEntryRequest();
+        log.fine(()->"RemoteJVM:  waiting for GC hook..");
+        EventQueue eveq = remoteVM.eventQueue();
+        while(Integer.parseInt("5") == 5) {
+            EventSet eves = eveq.remove();
+            try {
+            Event ee =  eves.eventIterator().nextEvent();
+                System.out.println("EVenet: " +ee);
+//                AsyncRemoteExecutor.getInstance().init(mee.thread());
+            } finally {
+                eves.resume();
+                req.disable();
+                remoteVM.eventRequestManager().deleteEventRequests(Arrays.asList(req));
+            }
+        }
+        log.fine(()->"RemoteJVM:  resumed.");
+        return true;
+    } // installRemoteExecutor
+
+*/
+
     /**
      * Creates and registers required breakpoint event
      * @param key   key to be used for registration this event type
@@ -399,7 +449,7 @@ public class RemoteJVM
                     log.log(Level.WARNING, "postopend installation  fail");
                 }
             } catch (Throwable th) {
-                log.log(Level.SEVERE, "postopend installation fail", th);
+                log.log(Level.SEVERE, "postponed installation fail", th);
             }
         } // was it loaded meanwhile
         else
@@ -412,6 +462,7 @@ public class RemoteJVM
         List<ReferenceType> types = remoteVM.classesByName(name);
         return types;
     }
+
 
     private class PostponedInstaller implements Function<List<ReferenceType>,Boolean>
     {
@@ -467,73 +518,70 @@ public class RemoteJVM
         }
     } // PostponedInstaller
 
-
-    public static ReferenceType upload(ThreadReference thread, List<Class> locals) throws Exception
-    {
-        List<byte[]> codes = new ArrayList<>();
-        for(Class clz : locals ) {
-            String name = clz.getName();
-            int lastdot = name.lastIndexOf('.');
-            String simplename = name.substring(lastdot+1);
-            InputStream is = clz.getResourceAsStream(simplename+".class");
-            ByteArrayOutputStream os = new ByteArrayOutputStream();
-            for(int ch = is.read(); ch != -1; ch = is.read())
-                os.write(ch);
-            is.close();
-            byte[] code = os.toByteArray();
-            codes.add(code);
-        }
-
-
-        List<Method> getLoaders = thread.referenceType().methodsByName("getContextClassLoader");
-        Method getContextClassLoader = getLoaders.get(0);
-        ObjectReference classLoader = (ObjectReference)  thread.invokeMethod(thread,
-                                                                getContextClassLoader,
-                                                                Collections.EMPTY_LIST,
-                                                                ClassType.INVOKE_SINGLE_THREADED);
-
-        VirtualMachine remoteVM = thread.virtualMachine();
-        List<ReferenceType> arrayz = remoteVM.classesByName("byte[]");
-        ArrayType bytearrtype = (ArrayType) arrayz.get(0);
-        List<Method> defineClassZ = classLoader.referenceType().methodsByName("defineClass");
-        Optional<Method> defineClassOpt =
-                defineClassZ.stream().filter(m->m.argumentTypeNames().size()==4).findAny();
-        Method defineClass = defineClassOpt.get();
-        List<Method> resolveClassZ = classLoader.referenceType().methodsByName("resolveClass");
-        Method resolveClass = resolveClassZ.get(0);
-
-        List<ClassObjectReference> loaded = new ArrayList<>();
-        for(int inx = 0; inx < codes.size(); inx++) {
-            byte[] code = codes.get(inx);
-            String name = locals.get(inx).getName();
-            ArrayReference arref = bytearrtype.newInstance(code.length);
-            for(int ii = 0; inx<code.length;inx++)
-                arref.setValue(ii, remoteVM.mirrorOf(code[ii]));
-            ClassObjectReference myloadedclazz = (ClassObjectReference)
-                    classLoader.invokeMethod(thread, defineClass,
-                            Arrays.asList(
-                                    null,
-//                                    remoteVM.mirrorOf(name),
-                                    arref,
-                                    remoteVM.mirrorOf(0),
-                                    remoteVM.mirrorOf(code.length)),
-                            ClassType.INVOKE_SINGLE_THREADED);
-            loaded.add(myloadedclazz);
-        }
-
-        ClassObjectReference root = loaded.get(0);
-        classLoader.invokeMethod(thread, resolveClass, Arrays.asList(root), ClassType.INVOKE_SINGLE_THREADED);
-        List<ReferenceType> mys = remoteVM.classesByName(root.reflectedType().name());
-        ReferenceType my = mys.get(0);
-        List<Method> ms = my.allMethods();
-        System.out.println("");
-        return my;
-    } // upload
-
-
 //// ================ TODO : clean later ======================================
 //// =================   archive        =======================================
 //// ===========================================================================
+//    public static ReferenceType upload(ThreadReference thread, List<Class> locals) throws Exception
+//    {
+//        List<byte[]> codes = new ArrayList<>();
+//        for(Class clz : locals ) {
+//            String name = clz.getName();
+//            int lastdot = name.lastIndexOf('.');
+//            String simplename = name.substring(lastdot+1);
+//            InputStream is = clz.getResourceAsStream(simplename+".class");
+//            ByteArrayOutputStream os = new ByteArrayOutputStream();
+//            for(int ch = is.read(); ch != -1; ch = is.read())
+//                os.write(ch);
+//            is.close();
+//            byte[] code = os.toByteArray();
+//            codes.add(code);
+//        }
+//
+//
+//        List<Method> getLoaders = thread.referenceType().methodsByName("getContextClassLoader");
+//        Method getContextClassLoader = getLoaders.get(0);
+//        ObjectReference classLoader = (ObjectReference)  thread.invokeMethod(thread,
+//                                                                getContextClassLoader,
+//                                                                Collections.EMPTY_LIST,
+//                                                                ClassType.INVOKE_SINGLE_THREADED);
+//
+//        VirtualMachine remoteVM = thread.virtualMachine();
+//        List<ReferenceType> arrayz = remoteVM.classesByName("byte[]");
+//        ArrayType bytearrtype = (ArrayType) arrayz.get(0);
+//        List<Method> defineClassZ = classLoader.referenceType().methodsByName("defineClass");
+//        Optional<Method> defineClassOpt =
+//                defineClassZ.stream().filter(m->m.argumentTypeNames().size()==4).findAny();
+//        Method defineClass = defineClassOpt.get();
+//        List<Method> resolveClassZ = classLoader.referenceType().methodsByName("resolveClass");
+//        Method resolveClass = resolveClassZ.get(0);
+//
+//        List<ClassObjectReference> loaded = new ArrayList<>();
+//        for(int inx = 0; inx < codes.size(); inx++) {
+//            byte[] code = codes.get(inx);
+//            String name = locals.get(inx).getName();
+//            ArrayReference arref = bytearrtype.newInstance(code.length);
+//            for(int ii = 0; inx<code.length;inx++)
+//                arref.setValue(ii, remoteVM.mirrorOf(code[ii]));
+//            ClassObjectReference myloadedclazz = (ClassObjectReference)
+//                    classLoader.invokeMethod(thread, defineClass,
+//                            Arrays.asList(
+//                                    null,
+////                                    remoteVM.mirrorOf(name),
+//                                    arref,
+//                                    remoteVM.mirrorOf(0),
+//                                    remoteVM.mirrorOf(code.length)),
+//                            ClassType.INVOKE_SINGLE_THREADED);
+//            loaded.add(myloadedclazz);
+//        }
+//
+//        ClassObjectReference root = loaded.get(0);
+//        classLoader.invokeMethod(thread, resolveClass, Arrays.asList(root), ClassType.INVOKE_SINGLE_THREADED);
+//        List<ReferenceType> mys = remoteVM.classesByName(root.reflectedType().name());
+//        ReferenceType my = mys.get(0);
+//        List<Method> ms = my.allMethods();
+//        System.out.println("");
+//        return my;
+//    } // upload
 //
 //    private ReferenceType loadManually(String name, int maxAttempts) throws Exception
 //    {

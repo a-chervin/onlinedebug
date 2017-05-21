@@ -16,9 +16,10 @@ public class MethodExitEventHandler extends MethodRelatedEventHandler<MethodExit
     }
 
     @Override
-    protected void onStart(MethodExitEvent event, HandlerData data, ExecutionContext ctx)
+    protected boolean onStart(MethodExitEvent event, HandlerData data, ExecutionContext ctx)
     {
         ctx.setEventSpecificValue(ReturnValue.class, event.returnValue());
+        return true;
     }
 
     @Override

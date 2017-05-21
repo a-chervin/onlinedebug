@@ -16,8 +16,9 @@ public class ExceptionBreakpointEventHandler extends EventHandlerBase<ExceptionB
     }
 
     @Override
-    protected void onStart(ExceptionEvent event, HandlerData data, ExecutionContext ctx)
+    protected boolean onStart(ExceptionEvent event, HandlerData data, ExecutionContext ctx)
     {
         ctx.setEventSpecificValue(CurrentException.class, event.exception());
+        return true;
     }
 }

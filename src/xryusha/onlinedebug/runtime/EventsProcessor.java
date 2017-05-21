@@ -1,9 +1,11 @@
 package xryusha.onlinedebug.runtime;
 
+import java.lang.reflect.Proxy;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.logging.*;
+import java.util.stream.Collectors;
 
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.ThreadReference;
@@ -11,6 +13,7 @@ import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.event.*;
 import xryusha.onlinedebug.config.Configuration;
 import xryusha.onlinedebug.runtime.handlers.*;
+import xryusha.onlinedebug.runtime.util.AsyncRemoteExecutor;
 import xryusha.onlinedebug.util.Log;
 import xryusha.onlinedebug.runtime.util.DaemonThreadFactory;
 
@@ -24,20 +27,10 @@ public class EventsProcessor
     private final static Logger log = Log.getLogger();
     private final VirtualMachine virtualMachine;
     private final ConcurrentMap<String,Function<List<ReferenceType>,Boolean>> postponedRegistrations;
-    private final ConcurrentMap<String,ExecutorService> treadSpecificExecutors = new ConcurrentHashMap<>();
-    private final ExecutorService generalExecutor;
-
-    /**
-     * defines invocation of event handler
-     * @param <E> event type
-     */
-    @FunctionalInterface
-    public interface HandlerCall<E extends Event>
-    {
-        void  handle(E event, HandlerData data, ExecutionContext ctx) throws Exception;
-    }
-
     private final Map<Class<? extends Event>, HandlerCall> eventHandlers = new HashMap<>();
+    private final ConcurrentMap<String,ExecutorService> eventExecutors = new ConcurrentHashMap<>();
+    private ThreadReference nullThread = null;
+    private AsyncRemoteExecutor async = null;
 
 
     public EventsProcessor(VirtualMachine virtualMachine, Configuration config,
@@ -48,7 +41,7 @@ public class EventsProcessor
 
         this.virtualMachine = virtualMachine;
         this.postponedRegistrations = postponedRegistrations;
-        generalExecutor = Executors.newSingleThreadExecutor(new DaemonThreadFactory());
+        nullThread = createNullThread();
 
         LineBreakpointEventHandler lineBPH = new LineBreakpointEventHandler(config);
         eventHandlers.put(BreakpointEvent.class,  (e,rt,cx)->lineBPH.handle((BreakpointEvent) e, rt, cx));
@@ -76,54 +69,69 @@ public class EventsProcessor
         log.fine("--waiting for events--");
         EventSet events = queue.remove();
         try {
-            ArrayList<Future> pending = new ArrayList<>();
-            for (EventIterator itr = events.eventIterator(); itr.hasNext(); ) {
-                Event event = itr.next();
-                long eventTime = System.currentTimeMillis();
-                if ( event instanceof LocatableEvent ) {
-                    // thread bounded events are processed in
-                    // parallel way, separate executor for events of
-                    // each thread
-                    LocatableEvent threadOwned = (LocatableEvent) event;
-                    final ThreadReference thread = threadOwned.thread();
-                    ExecutionContext ctx = ExecutionContext.createThreadBoundedContext(thread, eventTime);
-                    String executorK = thread.name();
-                    ExecutorService executor =
-                            treadSpecificExecutors.computeIfAbsent(executorK,
-                                    (k)->Executors.newSingleThreadExecutor(new DaemonThreadFactory()));
-                    Callable cl = ()-> {   try {
-                                              handleEvent(event, ctx);
-                                              return null;
-                                            } finally {
-                                               ExecutionContext.closeContext(thread);
-                                           }
-                                        };
-                    Future future = executor.submit(cl);
-                    pending.add(future);
-                } else {
-                    ExecutionContext ctx = new ExecutionContext(eventTime);
-                    Callable cl = ()->{ handleEvent(event, ctx); return null; };
-                    Future future = generalExecutor.submit(cl);
-                    pending.add(future);
-                }
-                log.fine(()->"handling event: " + event);
-            } // for events
-            // waiting until all event processing completed before resumin vm
-            for(Future fu : pending) {
-                try {
-                    fu.get();
-                } catch (Throwable th) {
-                    log.log(Level.SEVERE, "handlePendingEvents.handleEvent", th);
-                }
+            ArrayList<Event> pending = new ArrayList<>();
+            for (EventIterator itr = events.eventIterator(); itr.hasNext(); )
+                pending.add(itr.nextEvent());
+            Map<ThreadReference,List<Event>> eventGroups =
+                    pending.stream().collect(Collectors.groupingBy(
+                                        event-> ( event instanceof LocatableEvent )?
+                                                ((LocatableEvent)event).thread() : nullThread
+            ));
+            // if thread non-bounded events (e.g. ClassPrepareEvent) fired,
+            // full events.resume() should be called (no thread for thread.resume())
+            final boolean nonBoundExists = eventGroups.containsKey(nullThread);
+            final CountDownLatch cdl = /*nonBoundExists ?
+                                         new CountDownLatch(pending.size()) :
+                                           null*/
+                                       new CountDownLatch(pending.size())
+                    ;
+            for(Map.Entry<ThreadReference,List<Event>> group : eventGroups.entrySet()) {
+                ThreadReference thread = group.getKey();
+                List<Event> threadEvents = group.getValue();
+                ExecutionContext ctx =
+                        ExecutionContext.createThreadBoundedContext(thread,
+                                System.currentTimeMillis());
+                ExecutorService executor =
+                        eventExecutors.computeIfAbsent(
+                                thread.name(), (k) ->
+                                        Executors.newSingleThreadExecutor(new DaemonThreadFactory()));
+
+                for (Event e : threadEvents) {
+                    executor.submit(() -> {
+                        try {
+                            // no locks required. if async.init() called twice
+                            // 2nd call is just noop. Anyway, try init just once,
+                            // if fails - don't retry
+                            if ( async == null && thread != nullThread) {
+                                async = AsyncRemoteExecutor.getInstance();
+                                try {
+                                    async.init(thread);
+                                } catch (Throwable th) {
+                                    log.log(Level.SEVERE,
+                                            "AsyncRemoteExecutor initialization fail", th);
+                                }
+                            }
+                            log.fine(()->"handling event: " + e);
+                            handleEvent(e, ctx);
+                        } catch (Throwable th) {
+                            log.log(Level.SEVERE, "Failed handling of " + e, th);
+                        } finally {
+                            if ( cdl != null )
+                                cdl.countDown();
+                        }
+                    });
+                } // for threadEvents
+                executor.submit(()->thread.resume());
+            } // for groups
+            if ( nonBoundExists ) {
+                cdl.await();
+                events.resume();
             }
             log.fine("--ended events loop--");
         } catch (Throwable th) {
             log.log(Level.SEVERE, "handlePendingEvents.handleEventLoop", th);
-        } finally {
-            events.resume();
         }
-    } // handleNextEvent
-
+    } // handlePendingEvents
 
 
     private void handleEvent(Event event, ExecutionContext ctx) throws Exception
@@ -177,4 +185,40 @@ public class EventsProcessor
             log.log(Level.SEVERE, "postponed action failed", th);
         }
     } // handleClassPrepareEvent
+
+    private ThreadReference createNullThread()
+    {
+        ThreadReference thread = (ThreadReference)
+                Proxy.newProxyInstance(ThreadReference.class.getClassLoader(),
+                        new Class[]{ThreadReference.class},
+                        (proxy, method, args) -> {
+                            Object result = null;
+                            switch (method.getName()) {
+                                case "name":
+                                    result = "";
+                                    break;
+                                case "uniqueID":
+                                    result = Long.MIN_VALUE;
+                                    break;
+                                case "hashCode":
+                                    result = Integer.MIN_VALUE;
+                                    break;
+                                case "equals":
+                                    result = args[0] == this;
+                                    break;
+                            }
+                            return result;
+                        });
+        return thread;
+    } //
+
+    /**
+     * defines invocation of event handler
+     * @param <E> event type
+     */
+    @FunctionalInterface
+    public interface HandlerCall<E extends Event>
+    {
+        void  handle(E event, HandlerData data, ExecutionContext ctx) throws Exception;
+    }
 }

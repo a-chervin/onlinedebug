@@ -41,6 +41,7 @@ public abstract class MethodRelatedEventHandler<P extends MethodTargetingBreakPo
                                          bp.setMethod("<init>");
                                 });
 
+        // TODO: check zero-actions entries
         methodsOfClass = methodBpEntries.stream().collect(Collectors.groupingBy(
                                     e->((MethodTargetingBreakPoint)e.getBreakPoint()).getTargetClass(),
                                     ConcurrentHashMap::new,

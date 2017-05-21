@@ -220,7 +220,6 @@ public class RemoteInstaller extends RemotingBase
             String resource = requestpath.substring(root.length());
             while ( resource.charAt(0) == '/' )
                 resource = resource.substring(1);
-
             byte[] responseData = getResponse(resource);
             OutputStream os = httpExchange.getResponseBody();
             if ( responseData != null ) {
@@ -280,7 +279,6 @@ public class RemoteInstaller extends RemotingBase
     public static class RemoteLoader_XXXXXXXXXXXXXXXX extends CharsetProvider
     {
         // veeery long placeholder body to be replaced
-        // ISO-8859-1
         private final static String placeholderElement = "{placeholder}";
         private static String placeHolder =
                   placeholderElement + placeholderElement + placeholderElement
@@ -295,6 +293,7 @@ public class RemoteInstaller extends RemotingBase
                 + placeholderElement + placeholderElement + placeholderElement
                 + placeholderElement + placeholderElement + placeholderElement
                 ;
+        private static String loaderID = "RemoteLoader_XXXXXXXXXXXXXXXX";
 
         @Override
         public Iterator<Charset> charsets()
@@ -321,17 +320,18 @@ public class RemoteInstaller extends RemotingBase
                     Class<?> clz = Class.forName(name);
                     suceeded.add(name);
                 } catch (Throwable ex) {
+                    ex.printStackTrace();
                     failed.add(name);
                 }
             }
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw, true);
-            pw.println("==== remote loading ====");
+            pw.println("==== remote loader " + loaderID + " ===========");
             if (!suceeded.isEmpty())
                 pw.println("  Successfully loaded: " + suceeded);
             if (!failed.isEmpty())
                 pw.println("  Failed loading: " + failed);
-            pw.println("========================");
+            pw.println("=====================================================");
             pw.flush();
             System.out.println(sw);
         } // load

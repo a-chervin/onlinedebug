@@ -58,14 +58,17 @@ public abstract class EventHandlerBase<P extends AbstractBreakPointSpec, E exten
             log.severe(getClass().getSimpleName() + ": missing HandlerData: " + event);
             return;
         }
-        onStart(event, data, ctx);
+        boolean execute = onStart(event, data, ctx);
+        if ( !execute )
+            return;
         for(HandlerData.RuntimeConfig runtimeData: data.getConfig()) {
             handle(event, runtimeData, ctx);
         }
     } // handle
 
-    protected void onStart(E event, HandlerData data, ExecutionContext ctx)
+    protected boolean onStart(E event, HandlerData data, ExecutionContext ctx)
     {
+        return true;
     }
 
     protected void handle(E event, HandlerData.RuntimeConfig runtimeConfig, ExecutionContext ctx) throws Exception

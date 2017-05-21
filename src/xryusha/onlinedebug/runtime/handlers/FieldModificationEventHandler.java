@@ -17,9 +17,10 @@ public class FieldModificationEventHandler extends EventHandlerBase<FieldModific
     }
 
     @Override
-    protected void onStart(ModificationWatchpointEvent event, HandlerData data, ExecutionContext ctx)
+    protected boolean onStart(ModificationWatchpointEvent event, HandlerData data, ExecutionContext ctx)
     {
         ctx.setEventSpecificValue(ModificationCurrent.class, event.valueCurrent());
         ctx.setEventSpecificValue(ModificationNew.class, event.valueToBe());
+        return true;
     }
 }

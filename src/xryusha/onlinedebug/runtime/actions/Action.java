@@ -17,12 +17,12 @@ public abstract class Action<T extends ActionSpec> extends RemotingBase
     protected final T spec;
     protected static final ConcurrentMap<Class,
             ErrorproneBiFunction<ThreadReference,ActionSpec,Action>> actionFactory =
-
                            new ConcurrentHashMap<Class, ErrorproneBiFunction<ThreadReference,ActionSpec,Action>>() {{
                                    put(PrintSpec.class, (t, c)->new PrintAction(t,(PrintSpec)c));
                                    put(AssignSpec.class,(t, c)->new AssignAction((AssignSpec)c));
                                    put(ReturnSpec.class,(t, c)->new ReturnAction(t, (ReturnSpec)c));
                                    put(InvokeSpec.class,(t, c)->new InvokeAction((InvokeSpec)c));
+                                   put(RuntimeActionSpec.class,(t, c)->fromRuntimeActionSpec((RuntimeActionSpec)c));
                                }};
 
 
@@ -41,6 +41,11 @@ public abstract class Action<T extends ActionSpec> extends RemotingBase
     protected Action(T spec)
     {
         this.spec = spec;
+    }
+
+    private static Action fromRuntimeActionSpec(RuntimeActionSpec spec)
+    {
+        return spec.getAction();
     }
 
     public abstract void execute(LocatableEvent event, ExecutionContext ctx) throws Exception;
