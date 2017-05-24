@@ -56,22 +56,10 @@ public class AccessNestedTest extends AutomaticTestcaseBase
         runTest(NestedCallChainPrematureEnd.class);
     }
 
-/*
-    public static void main(String[] args) throws Exception
+    @Test
+    public void accessConstructor() throws Exception
     {
-        AccessLocalTest at = new AccessLocalTest();
-        at.accessLocalVars();
-        Map<Thread, StackTraceElement[]> thrm = Thread.getAllStackTraces();
-        System.out.println("--thlist--");
-        thrm.keySet().stream().filter(t->!t.isDaemon())
-                              .forEach(t-> {
-                                  System.out.println("Thread: " + t);
-                                  StackTraceElement[] stacks = thrm.get(t);
-                                  for(StackTraceElement stack: stacks) {
-                                      System.out.println("   " + stack);
-                                  }
-                                        });
-        System.out.println("--end--");
+        runTest(FromConstructor.class);
     }
-*/
+
 }

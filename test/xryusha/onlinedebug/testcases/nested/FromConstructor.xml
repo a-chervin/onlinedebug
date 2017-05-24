@@ -1,0 +1,18 @@
+<configuration>
+	<entry>
+		<atLocation class="xryusha.onlinedebug.testcases.nested.FromConstructor"
+					line="10" fastFailOnMissing="false"/>
+		<print location="both">
+			<params>
+				<chain>
+					<constructor class="xryusha.onlinedebug.testcases.nested.Nested_T2">
+						<params>
+							<const value="17"/>
+						</params>
+					</constructor>
+					<ref var="inst_ii"/>
+				</chain>
+			</params>
+		</print>
+	</entry>
+</configuration>

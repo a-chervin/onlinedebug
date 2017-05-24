@@ -166,6 +166,7 @@ public abstract class AutomaticTestcaseBase
         }
         ConcurrentMap<String,Function<List<ReferenceType>,Boolean>> postponedRegistrations = jvm.apply(config);
         EventsProcessor handler = new EventsProcessor(jvm.getRemoteVM(), config, postponedRegistrations);
+        onStart(handler, jvm, config);
         // notify test process it may continue start
         proc.getOutputStream().write(new byte[]{(byte)'a', (byte)'\n'});
         proc.getOutputStream().flush();
@@ -180,6 +181,11 @@ public abstract class AutomaticTestcaseBase
             }
         } // while
     } // runTest
+
+    // callback
+    protected void onStart(EventsProcessor handler, RemoteJVM jvm, Configuration config)
+    {
+    }
 
     protected Configuration setupTargetFiles(Path configurationFile, Path localLog, Path remoteLog) throws Exception
     {
