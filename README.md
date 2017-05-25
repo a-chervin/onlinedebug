@@ -1,6 +1,86 @@
-utility which may be useful for other developers. This utility allows configuration-based non-intrusive monitoring and manipulation of remote jvm. Upon specified event type (method exit/entry, thrown exception, field modification or arriving to specific source code line) required actions (data logging, assigning value to variables, aritrary method invocation or enforcing immediate return from currently executed method with configured return value) may be performed in conditional way.
+The project is aimed to be useful for java developer. The most obvious use case of this utility is simplification of troubleshooting process and code investigation in places where regular debugging is impossible or problematic: 
 
-Most obvious use cases - troubleshooting, code behavior investigation, including 3rd party libraries compiled without debug information or reproducing of different scenarios (assigning to variables requried values and modifying method return values).
-Various configuration examples may be found in /xryusha/onlinedebug/testcases/**.xml files, detailed configuration elements explanation provided in example_breakpoints.xml, example_actions.xml, example_rvalues.xml and example_condition.xml.
+<ul>
+  <li>QA/system tests etc  environments</li>
+  <li>Investigation of sporadically happening problems or long running (say, overnight) data collection</li>
+  <li>Running code is too far and networking overhead becomes significant </li>
+  <li>
+   Reproducing complicated scenario: for example, just to check smsEngine.sendMessage() tons  of irrelevant configurations required:
+   <pre>
+        void alert(String customerId, String storeId, String productId)
+        {
+           Customer customer;
+           Store store;
+           if (  (customer=customerRepository.getCustomer(customerId)) != null
+                  &&  productVerifier.isValid(productId, customer)
+                  && (store=storeRepository.getStore(storeId)) != null
+                  &&  zoneService.isSameArea(customer, store)
+                  &&  discountEngine.getDiscount(customer, store, productId) > 0 ) {
+                      smsEngine.sendMessage(customer, 
+                                           "Don't miss! we have something interesting..");
+           } // if
+        } // alert
+   </pre>
+ </li>
+ <li>
+    “fast and dirty” workaround for problems which can’t be fixed currently but blocks working on something else:
+     <pre>
+        void ourMethod()
+        {
+            //// something
+            if ( !valid() )
+               throw new IllegalArgumentException("Ooops..");
+            //// something
+        }
 
-As utility is based on java debug interface, remote jvm must be launched with remote debug flags (-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address={PORT}
+         boolean valid()
+         { 
+            return false; 
+         }     
+ </pre>
+ </li>
+ <li>or just library source code is not available but still must be investigated in different cases </li>
+</ul>
+
+Without modification/recompilation of applicative code this utility allows configuration-based non-intrusive monitoring and manipulation of remote jvm. Upon specified event type (arriving to specific source code line, method entry/exit, throwing exception or field modification) it performs required actions, as:
+<ul>
+  <li>collecting and logging to console or file information of:
+      <ul>
+          <li>specified variables values</li>
+          <li>all visible local variables values</li>
+          <li>evaluated expression value</li>
+          <li>method arguments</li>
+          <li>method return value</li>
+          <li>stacktrace</li>
+          <li>old/new values in case of field value modification</li>
+          <li>etc</li>
+      </ul>
+   </li>
+   <li>
+      assigning value to variables where value may by 
+      <ul>
+          <li>constant value</li>
+          <li>value of another variable</li>
+          <li>result of evaluated expression</li>
+          <li>new instance from arbitrary constructor signature</li>
+       </ul>
+    </li>
+    <li>arbitrary method invocation </li>
+    <li>
+      enforcing return from currently executed method with configured return value: 
+      <pre>
+          boolean valid()
+          {
+             System.out.println("so bad luck..");
+             return false;  ⇐ without code changing returned value may be enforced to true
+          }      
+      </pre>
+    </li>    
+</ul>
+
+   All specified may be performed in conditional way (<i>equals(..,..)</i>, <i>less/greater</i>, <i>isnull</i>, <i>not(...)</i>, nested <i>or(...)</i> / <i>and(...)</i>)
+ 
+The utility is based on java debug interface and  no application bytecode modifications involved, as a result  when it disconnects from monitored application the last returns to its initial state. 
+ 
+ 
+   Various configuration examples may be found in <i>/xryusha/onlinedebug/testcases/**.xml</i> files, detailed configuration elements explanation are provided in <i>example_breakpoints.xml</i>, <i>example_actions.xml</i>, <i>example_rvalues.xml</i> and <i>example_condition.xml</i>.
