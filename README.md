@@ -1,9 +1,13 @@
 The project is aimed to be useful for java developer. The most obvious use case of this utility is simplification of troubleshooting process and code investigation in places where regular debugging is impossible or problematic: 
 
 <ul>
-  <li>QA/system tests etc  environments</li>
+  <li>QA/system tests etc  environments
+      <img src="images/qa_env.png"/>
+  </li>
   <li>Investigation of sporadically happening problems or long running (say, overnight) data collection</li>
-  <li>Running code is too far and networking overhead becomes significant </li>
+  <li>Running code is too far and networking overhead becomes significant 
+      <img src="images/very_far.png"/>
+  </li>
   <li>
    Reproducing complicated scenario: for example, just to check smsEngine.sendMessage() tons  of irrelevant configurations required:
    <pre>
