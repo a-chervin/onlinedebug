@@ -87,7 +87,7 @@ Without modification/recompilation of applicative code this utility allows confi
 
    All specified may be performed in conditional way (<i>equals(..,..)</i>, <i>less/greater</i>, <i>isnull</i>, <i>not(...)</i>, nested <i>or(...)</i> / <i>and(...)</i>)
  
-The utility is based on java debug interface and  no application bytecode modifications involved, as a result  when it disconnects from monitored application the last returns to its initial state. 
+The utility is based on java debug interface and  no application bytecode modifications are involved, as a result  when it disconnects from monitored application the last returns to its initial state. 
  
  
    Various configuration examples may be found in <i>/xryusha/onlinedebug/testcases/**.xml</i> files, detailed configuration elements explanation are provided in <i>example_breakpoints.xml</i>, <i>example_actions.xml</i>, <i>example_rvalues.xml</i> and <i>example_condition.xml</i>.
