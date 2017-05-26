@@ -1,4 +1,4 @@
-<h1><strong>The project is aimed to be useful for java developer. The most obvious use case of this utility is simplification of troubleshooting process and code investigation in places where regular debugging is impossible or problematic:</strong></h1>
+<h6><strong>The project is aimed to be useful for java developer. The most obvious use case of this utility is simplification of troubleshooting process and code investigation in places where regular debugging is impossible or problematic:</strong></h6>
 
 <ul>
   <li>QA/system tests etc  environments
