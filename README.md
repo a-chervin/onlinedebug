@@ -1,14 +1,15 @@
-<h4>The project is aimed to be useful for java developer. The most obvious use case of this utility is simplification of troubleshooting process and code investigation in places where regular debugging is impossible or problematic:</h4>
+The project is aimed to be useful for java developer. The most obvious use case of this utility is simplification of troubleshooting process and code investigation in places where regular debugging is impossible or problematic: 
+
 <ul>
-<li><strong>QA</strong>/system tests etc  environments
-      <img src="images/qa_env.png"/>
+  <li>QA/system tests etc  environments
+      <img src="images/qa_env.png" />
   </li>
-  <li><strong>I</strong>nvestigation of sporadically happening problems or long running (say, overnight) data collection</li>
-  <li><strong>R</strong>unning code is too far and networking overhead becomes significant 
-      <img src="images/very_far.png" />
+  <li>Investigation of sporadically happening problems or long running (say, overnight) data collection</li>
+  <li>Running code is too far and networking overhead becomes significant 
+      <img src="images/very_far.png"/>
   </li>
   <li>
-  <strong>R</strong>eproducing complicated scenario: for example, just to check smsEngine.sendMessage() tons  of irrelevant configurations required:
+   Reproducing complicated scenario: for example, just to check smsEngine.sendMessage() tons  of irrelevant configurations required:
    <pre>
         void alert(String customerId, String storeId, String productId)
         {
@@ -26,7 +27,7 @@
    </pre>
  </li>
  <li>
-    “fast and dirty” workaround for problems which can’t be fixed currently but blocks working on something else:
+    “<strong>f</strong>ast and dirty” workaround for problems which can’t be fixed currently but blocks working on something else:
      <pre>
         void ourMethod()
         {
@@ -42,12 +43,12 @@
          }     
  </pre>
  </li>
- <li>or just library source code is not available but still must be investigated in different cases </li>
+ <li><strong>o</strong>r just library source code is not available but still must be investigated in different cases </li>
 </ul>
 
 Without modification/recompilation of applicative code this utility allows configuration-based non-intrusive monitoring and manipulation of remote jvm. Upon specified event type (arriving to specific source code line, method entry/exit, throwing exception or field modification) it performs required actions, as:
 <ul>
-  <li>collecting and logging to console or file information of:
+<li><strong>c</strong>ollecting and logging to console or file information of:
       <ul>
           <li>specified variables values</li>
           <li>all visible local variables values</li>
