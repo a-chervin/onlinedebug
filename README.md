@@ -61,7 +61,7 @@ Without modification/recompilation of applicative code this utility allows confi
       </ul>
    </li>
    <li>
-      assigning value to variables where value may by 
+   <strong>a</strong>ssigning value to variables where value may by 
       <ul>
           <li>constant value</li>
           <li>value of another variable</li>
@@ -69,9 +69,9 @@ Without modification/recompilation of applicative code this utility allows confi
           <li>new instance from arbitrary constructor signature</li>
        </ul>
     </li>
-    <li>arbitrary method invocation </li>
+    <li><strong>a</strong>rbitrary method invocation </li>
     <li>
-      enforcing return from currently executed method with configured return value: 
+    <strong>e</strong>nforcing return from currently executed method with configured return value: 
       <pre>
           boolean valid()
           {
