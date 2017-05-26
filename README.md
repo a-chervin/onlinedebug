@@ -5,7 +5,7 @@
   </li>
   <li>Investigation of sporadically happening problems or long running (say, overnight) data collection</li>
   <li>Running code is too far and networking overhead becomes significant 
-      <img src="images/very_far.png" width="30px"/>
+      <img src="images/very_far.png" />
   </li>
   <li>
    Reproducing complicated scenario: for example, just to check smsEngine.sendMessage() tons  of irrelevant configurations required:
