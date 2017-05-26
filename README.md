@@ -3,7 +3,7 @@
 <li><strong>QA</strong>/system tests etc  environments
       <img src="images/qa_env.png"/>
   </li>
-  <li><h4>I</h4>nvestigation of sporadically happening problems or long running (say, overnight) data collection</li>
+  <li><strong>I</strong>nvestigation of sporadically happening problems or long running (say, overnight) data collection</li>
   <li>Running code is too far and networking overhead becomes significant 
       <img src="images/very_far.png" />
   </li>
