@@ -1,9 +1,10 @@
-<h4><em>The project is aimed to be useful for java developer. The most obvious use case of this utility is simplification of troubleshooting process and code investigation in places where regular debugging is impossible or problematic:</em></h4>
+<h4>The project is aimed to be useful for java developer. The most obvious use case of this utility is simplification of troubleshooting process and code investigation in places where regular debugging is impossible or problematic:</h4>
 
 <ul>
-  <li><strong>Q</strong>A/system tests etc  environments
-      <img src="images/qa_env.png" />
-  </li>
+
+<li><strong>Q</strong>A/system tests etc  environments
+<img src="images/qa_env.png" />
+</li>
   <li>Investigation of sporadically happening problems or long running (say, overnight) data collection</li>
   <li>Running code is too far and networking overhead becomes significant 
       <img src="images/very_far.png"/>
