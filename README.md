@@ -1,4 +1,4 @@
-<h4>The project is aimed to be useful for java developer. The most obvious use case of this utility
+<h4>The project is aimed to be useful for java developer. The most obvious use case of this utility<br>
     is simplification of troubleshooting process and code investigation in places where regular debugging
     is impossible or problematic:</h4>
     
