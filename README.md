@@ -7,8 +7,7 @@
   <img src="images/qa_env_6.png"/>
   </li>
   <li>Investigation of sporadically happening problems or long running (say, overnight) data collection</li>
-  <li>Running code is too far and networking overhead<br/>
-      becomes significant 
+  <li>Running code is too far and networking overhead becomes significant 
       <img src="images/very_far_6.png"/>
   </li>
   <li>
