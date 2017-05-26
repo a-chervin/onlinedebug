@@ -1,4 +1,4 @@
-The project is aimed to be useful for java developer. The most obvious use case of this utility is simplification of troubleshooting process and code investigation in places where regular debugging is impossible or problematic: 
+<h1><strong>The project is aimed to be useful for java developer. The most obvious use case of this utility is simplification of troubleshooting process and code investigation in places where regular debugging is impossible or problematic:</strong></h1>
 
 <ul>
   <li>QA/system tests etc  environments
@@ -6,7 +6,7 @@ The project is aimed to be useful for java developer. The most obvious use case 
   </li>
   <li>Investigation of sporadically happening problems or long running (say, overnight) data collection</li>
   <li>Running code is too far and networking overhead becomes significant 
-      <img src="images/very_far.png"/>
+      <img src="images/very_far.png" width="30px"/>
   </li>
   <li>
    Reproducing complicated scenario: for example, just to check smsEngine.sendMessage() tons  of irrelevant configurations required:
