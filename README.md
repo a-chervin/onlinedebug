@@ -1,7 +1,7 @@
-The project is aimed to be useful for java developer. The most obvious use case of this utility is simplification of troubleshooting process and code investigation in places where regular debugging is impossible or problematic: 
+<h4>The project is aimed to be useful for java developer. The most obvious use case of this utility is simplification of troubleshooting process and code investigation in places where regular debugging is impossible or problematic:</h4>
 
 <ul>
-  <li>QA/system tests etc  environments
+  <li><strong>Q</strong>A/system tests etc  environments
       <img src="images/qa_env.png" />
   </li>
   <li>Investigation of sporadically happening problems or long running (say, overnight) data collection</li>
@@ -9,7 +9,7 @@ The project is aimed to be useful for java developer. The most obvious use case 
       <img src="images/very_far.png"/>
   </li>
   <li>
-   Reproducing complicated scenario: for example, just to check smsEngine.sendMessage() tons  of irrelevant configurations required:
+   <strong>R</strong>eproducing complicated scenario: for example, just to check smsEngine.sendMessage() tons  of irrelevant configurations required:
    <pre>
         void alert(String customerId, String storeId, String productId)
         {
