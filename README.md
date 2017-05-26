@@ -3,11 +3,11 @@
     is impossible or problematic:</h4>
     
 <ul>
-  <li><strong>Q</strong>A/system tests etc environments  <!--<img src="images/qa_env_2.png" />-->
+  <li><strong>QA</strong>/system tests etc environments  <!--<img src="images/qa_env_2.png" />-->
   <img src="images/qa_env_6.png"/>
   </li>
-  <li>Investigation of sporadically happening problems or long running (say, overnight) data collection</li>
-  <li>Running code is too far and networking overhead becomes significant 
+  <li><strong>I</strong>nvestigation of sporadically happening problems or long running (say, overnight) data collection</li>
+  <li><strong>R</strong>unning code is too far and networking overhead becomes significant 
       <img src="images/very_far_6.png"/>
   </li>
   <li>
@@ -29,7 +29,7 @@
    </pre>
  </li>
  <li>
-    “<strong>f</strong>ast and dirty” workaround for problems which can’t be fixed currently but blocks working on something else:
+    “<strong>F</strong>ast and dirty” workaround for problems which can’t be fixed currently but blocks working on something else:
      <pre>
         void ourMethod()
         {
@@ -41,7 +41,7 @@
 
          boolean valid()
          { 
-            return false; 
+         return false; 
          }     
  </pre>
  </li>
