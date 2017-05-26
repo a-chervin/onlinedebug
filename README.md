@@ -4,7 +4,7 @@
     
 <ul>
   <li><strong>Q</strong>A/system tests etc environments  <!--<img src="images/qa_env_2.png" />-->
-  <img src="images/qa_env_2.png"/>
+  <img src="images/qa_env_6.png"/>
   </li>
   <li>Investigation of sporadically happening problems or long running (say, overnight) data collection</li>
   <li>Running code is too far and networking overhead becomes significant 
