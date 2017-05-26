@@ -1,6 +1,6 @@
 <h4>The project is aimed to be useful for java developer. The most obvious use case of this utility is simplification of troubleshooting process and code investigation in places where regular debugging is impossible or problematic:</h4>
 <ul>
-<li><h4>QA</h4>/system tests etc  environments
+<li><strong>QA</strong>/system tests etc  environments
       <img src="images/qa_env.png"/>
   </li>
   <li>Investigation of sporadically happening problems or long running (say, overnight) data collection</li>
