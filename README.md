@@ -12,7 +12,7 @@
       <img src="images/very_far_6.png"/>
   </li>
   <li>
-   <strong>R</strong>eproducing complicated scenario: for example, just to check <strong><i>smsEngine.sendMessage()</i></strong> tons  of irrelevant configurations required:
+   <strong>R</strong>eproducing complicated scenario: for example, just to check <i>smsEngine.sendMessage()</i> tons  of irrelevant configurations required:
    <pre>
         void alert(String customerId, String storeId, String productId)
         {
