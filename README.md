@@ -3,11 +3,11 @@
 <ul>
 
 <li><strong>Q</strong>A/system tests etc  environments
-<pre><img src="images/qa_env.png" /></pre>
+<img src="images/qa_env.png" />
 </li>
   <li>Investigation of sporadically happening problems or long running (say, overnight) data collection</li>
   <li>Running code is too far and networking overhead becomes significant 
-  <pre><img src="images/very_far.png"/></pre>
+  <img src="images/very_far.png"/>
   </li>
   <li>
    <strong>R</strong>eproducing complicated scenario: for example, just to check smsEngine.sendMessage() tons  of irrelevant configurations required:
