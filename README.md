@@ -31,13 +31,13 @@
  <li>
     “<strong>F</strong>ast and dirty” workaround for problems which can’t be fixed currently but block working on something else:
      <pre>
-        void ourMethod()
-        {
-            //// something
-            if ( !valid() )
-               throw new IllegalArgumentException("Ooops..");
-            //// something
-        }
+       void ourMethod()
+       {
+           //// something
+           if ( !valid() )
+              throw new IllegalArgumentException("Ooops..");
+           //// something
+       }
 
          boolean valid()
          { 
