@@ -39,10 +39,10 @@
             //// something
         }
 
-         boolean valid()
-         { 
+        boolean valid()
+        { 
             return false; 
-         }     
+          }
  </pre>
  </li>
  <li><strong>o</strong>r just library source code is not available but still must be investigated in different cases </li>
