@@ -29,7 +29,7 @@
    </pre>
  </li>
  <li>
-    “<strong>F</strong>ast and dirty” workaround for problems which can’t be fixed currently but blocks working on something else:
+    “<strong>F</strong>ast and dirty” workaround for problems which can’t be fixed currently but block working on something else:
      <pre>
         void ourMethod()
         {
