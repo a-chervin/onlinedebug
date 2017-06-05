@@ -3,6 +3,8 @@ package xryusha.onlinedebug.runtime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+//import java.util.concurrent.Executors;
+//import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -98,7 +100,7 @@ public class RemotingBase
      * @return evaluation result
      * @throws Exception
      */
-    private Value _getValue(ThreadReference thread, List<RValue> variablePath) throws Exception
+    private Value _getValue(final ThreadReference thread, List<RValue> variablePath) throws Exception
     {
         String prematureMessageFormat = "Access premature termination on entry %1$s for path %2$s";
         StackFrame currFrame = thread.frame(0);
@@ -420,7 +422,7 @@ public class RemotingBase
      * @return
      * @throws Exception
      */
-    private boolean isInstanceOf(ThreadReference thread, ObjectReference ref, ReferenceType type) throws Exception
+    protected boolean isInstanceOf(ThreadReference thread, ObjectReference ref, ReferenceType type) throws Exception
     {
         if ( ref == null )
             return false;
@@ -494,7 +496,7 @@ public class RemotingBase
             return (v)-> accessThisValue(thread);
 
         StackFrame frame = thread.frame(frameDepth);
-        LocalVariable local = frame.visibleVariableByName(path.getValue());
+        LocalVariable local = frame.visibleVariableByName(path.getValue());;
         if ( local != null ) {
             Method method = frame.location().method();
             return (v) -> accessLocalValue(thread, frameDepth, method, local);
@@ -626,7 +628,7 @@ public class RemotingBase
     }
 
     /**
-     *  frameDepth is not enought as when it called from extender method depth value will be bigger.
+     *  frameDepth is not enough as when it called from extender method depth value will be bigger.
      *  On another hand, just fieldLocation is enought but scrolling from depth 0 is non-necessary
      *  operations we could save. So we start with minimal depth
      */

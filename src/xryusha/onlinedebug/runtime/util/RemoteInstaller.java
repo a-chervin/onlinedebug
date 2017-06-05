@@ -14,9 +14,10 @@ import com.sun.jdi.*;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import xryusha.onlinedebug.config.values.*;
 import xryusha.onlinedebug.runtime.RemotingBase;
 import xryusha.onlinedebug.runtime.SyntheticRValue;
-import xryusha.onlinedebug.config.values.*;
+
 
 
 /**
@@ -47,7 +48,6 @@ public class RemoteInstaller extends RemotingBase
     private final static String INSTALLER_ROOT = "/installer";
     private final static Charset oneByteCharset =  Charset.forName("ISO-8859-1");
     private final static AtomicInteger loadersCount = new AtomicInteger(0);
-
     private final String serverURL;
     private final InstallingHandler  patchinghandler;
     private final byte[] loaderTemplate;
@@ -101,7 +101,7 @@ public class RemoteInstaller extends RemotingBase
         loaderTemplate = baos.toByteArray();
     }
 
-    public void install(ThreadReference thread, List<Class> classes) throws Exception
+    public boolean install(ThreadReference thread, List<Class> classes) throws Exception
     {
         VirtualMachine vm = thread.virtualMachine();
         StringBuffer missingList = new StringBuffer();
@@ -111,7 +111,7 @@ public class RemoteInstaller extends RemotingBase
             }
         }
         if ( missingList.length() == 0 )
-            return;
+            return true;
         if ( missingList.length() > RemoteLoader_XXXXXXXXXXXXXXXX.placeHolder.length() )
             throw new IllegalArgumentException("classes list is too long");
 
@@ -139,6 +139,14 @@ public class RemoteInstaller extends RemotingBase
                            .getBytes(oneByteCharset);
 
         ObjectReference urlClassloader = getClassLoader(thread);
+        // Is it URLClassloader? If not - we can't patch it..
+        if ( !isInstanceOf(thread,
+                           urlClassloader,
+                           thread.virtualMachine()
+                                 .classesByName(URLClassLoader.class.getName()).get(0))) {
+            log.log(Level.INFO, () -> "RemoteInstaller.install: classloader is not URLClassLoader, exitting");
+            return false; //
+        }
         patchClassLoaderIfNeeded(thread, urlClassloader);
         patchinghandler.publish(CharsetProvider.class, updatedClassName, updatedClassContent, () -> {
                     CallSpec charsetForName = new CallSpec(Charset.class.getName(), "forName");
@@ -148,6 +156,8 @@ public class RemoteInstaller extends RemotingBase
                     } catch (Exception ex) { // that's ok, it fails but the call triggers loading
                     }
                 });
+        log.log(Level.FINE, "RemoteInstaller.install: initlized successfully");
+        return true;
     } // install
 
 
@@ -179,9 +189,30 @@ public class RemoteInstaller extends RemotingBase
             return;
         }
 
-        Constructor urlCtor = new Constructor(URL.class.getName());
-        urlCtor.getParams().add(new Const(serverURL, String.class.getName()));
-        ObjectReference url = (ObjectReference) getValue(thread, urlCtor);
+        URL serverURLObj = new URL(serverURL);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream oos =  new ObjectOutputStream(baos);
+        oos.writeObject(serverURLObj);
+        byte[] data = baos.toByteArray();
+        ArrayType arrType = (ArrayType)
+                  thread.virtualMachine().classesByName("byte[]").get(0);
+        ArrayReference arr = arrType.newInstance(data.length);
+        for(int inx = 0; inx < data.length; inx++)
+            arr.setValue(inx, thread.virtualMachine().mirrorOf(data[inx]));
+
+        // URL u = new ObjectInputStream(new ByteArrayInputStream(arr)).readObject();
+        // Though this way significantly more complicated than just new URL(String),
+        // this way reduces probability of collision since new URL()
+        // may be monitored itself
+        Constructor bais = new Constructor(ByteArrayInputStream.class.getName());
+        bais.getParams().add(new SyntheticRValue(arr));
+        Constructor ois = new Constructor(ObjectInputStream.class.getName());
+        ois.getParams().add(bais);
+        RefChain readChain = new RefChain();
+        readChain.getRef().add(ois);
+        readChain.getRef().add(new CallSpec(null, "readObject"));
+        ObjectReference url = (ObjectReference) getValue(thread, readChain);
+
         // Adding to URLLoader
         RefChain addUrlChain = new RefChain();
         addUrlChain.getRef().add(new SyntheticRValue(urlClassLoader));

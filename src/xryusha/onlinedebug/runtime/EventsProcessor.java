@@ -3,6 +3,7 @@ package xryusha.onlinedebug.runtime;
 import java.lang.reflect.Proxy;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.logging.*;
 import java.util.stream.Collectors;
@@ -23,12 +24,14 @@ import xryusha.onlinedebug.runtime.util.DaemonThreadFactory;
 public class EventsProcessor
 {
     public final static String HANDLER_DATA_PN = "handlerData";
-
+    private final static int MAX_INITIALIZATION_ATTEMPTS = 5;
     private final static Logger log = Log.getLogger();
+    private final static AtomicInteger asyncInitializationAttempts = new AtomicInteger(0);
     private final VirtualMachine virtualMachine;
     private final ConcurrentMap<String,Function<List<ReferenceType>,Boolean>> postponedRegistrations;
     private final Map<Class<? extends Event>, HandlerCall> eventHandlers = new HashMap<>();
     private final ConcurrentMap<String,ExecutorService> eventExecutors = new ConcurrentHashMap<>();
+    private final Map<String,EventProcessingEntry> currentlyProcessedEvent = new ConcurrentHashMap<>();
     private ThreadReference nullThread = null;
     private AsyncRemoteExecutor async = null;
 
@@ -69,64 +72,106 @@ public class EventsProcessor
         log.fine("--waiting for events--");
         EventSet events = queue.remove();
         try {
+            // collect events and group by tread
             ArrayList<Event> pending = new ArrayList<>();
-            for (EventIterator itr = events.eventIterator(); itr.hasNext(); )
-                pending.add(itr.nextEvent());
-            Map<ThreadReference,List<Event>> eventGroups =
-                    pending.stream().collect(Collectors.groupingBy(
-                                        event-> ( event instanceof LocatableEvent )?
-                                                ((LocatableEvent)event).thread() : nullThread
-            ));
+            for (EventIterator itr = events.eventIterator(); itr.hasNext(); ) {
+                Event e = itr.nextEvent();
+                pending.add(e);
+                log.log(Level.FINE, () -> "handlePendingEvents: retrieved event " + e);
+            }
+
+
+
+            ThreadReference[] threadHolder = new ThreadReference[1];
+            Map<String, List<EventProcessingEntry>> eventGroups =
+                    pending.stream()
+                           .map(e -> {
+                                ThreadReference thread =  nullThread;
+                                if ( e instanceof LocatableEvent) {
+                                    thread = ((LocatableEvent) e).thread();
+                                    threadHolder[0] = thread;
+                                }
+                                EventProcessingEntry ee = new EventProcessingEntry(e, thread);
+                                return ee;
+                             })
+                             .collect(Collectors.groupingBy(entry -> entry.thread.name()));
+
+            //  Try to init async executor if it was not yet.
+            if (async == null && threadHolder[0] != null
+                          && asyncInitializationAttempts.get() < MAX_INITIALIZATION_ATTEMPTS ) {
+                asyncInitializationAttempts.incrementAndGet();
+                async = AsyncRemoteExecutor.getInstance();
+                try {
+                    AsyncRemoteExecutor inst = AsyncRemoteExecutor.getInstance();
+                    if (!inst.init(threadHolder[0]))
+                        async = null;
+                } catch (Throwable th) {
+                    log.log(Level.SEVERE, "AsyncRemoteExecutor initialization fail", th);
+                }
+                if (asyncInitializationAttempts.get() < MAX_INITIALIZATION_ATTEMPTS)
+                    log.log(Level.SEVERE, "Stopping attempts to install async executor");
+            }
+
             // if thread non-bounded events (e.g. ClassPrepareEvent) fired,
             // full events.resume() should be called (no thread for thread.resume())
-            final boolean nonBoundExists = eventGroups.containsKey(nullThread);
-            final CountDownLatch cdl = nonBoundExists ?
-                                         new CountDownLatch(pending.size()) :
-                                           null;
-            for(Map.Entry<ThreadReference,List<Event>> group : eventGroups.entrySet()) {
-                ThreadReference thread = group.getKey();
-                List<Event> threadEvents = group.getValue();
-                ExecutionContext ctx =
-                        ExecutionContext.createThreadBoundedContext(thread,
-                                System.currentTimeMillis());
-                ExecutorService executor =
-                        eventExecutors.computeIfAbsent(
-                                thread.name(), (k) ->
-                                        Executors.newSingleThreadExecutor(new DaemonThreadFactory()));
+            final boolean nonBoundExists = eventGroups.containsKey(nullThread.name());
+            final CountDownLatch cdl = nonBoundExists ? new CountDownLatch(pending.size()) : null;
+                for (Map.Entry<String, List<EventProcessingEntry>> group : eventGroups.entrySet()) {
+                    ThreadReference thread = group.getValue().get(0).thread;
+                    List<EventProcessingEntry> threadEventEntries = group.getValue();
+                    AtomicInteger threadEventsCnt = new AtomicInteger(threadEventEntries.size());
+                    ExecutionContext ctx =
+                            ExecutionContext.createThreadBoundedContext(thread, System.currentTimeMillis());
+                    ExecutorService executor =
+                            eventExecutors.computeIfAbsent(
+                                    thread.name(), (k) ->
+                                            Executors.newSingleThreadExecutor(new DaemonThreadFactory()));
 
-                for (Event e : threadEvents) {
-                    executor.submit(() -> {
-                        try {
-                            // no locks required. if async.init() called twice
-                            // 2nd call is just noop. Anyway, try init just once,
-                            // if fails - don't retry
-                            if ( async == null && thread != nullThread) {
-                                async = AsyncRemoteExecutor.getInstance();
-                                try {
-                                    async.init(thread);
-                                } catch (Throwable th) {
-                                    log.log(Level.SEVERE,
-                                            "AsyncRemoteExecutor initialization fail", th);
-                                }
-                            }
-                            log.fine(()->"handling event: " + e);
-                            handleEvent(e, ctx);
-                        } catch (Throwable th) {
-                            log.log(Level.SEVERE, "Failed handling of " + e, th);
-                        } finally {
-                            if ( cdl != null )
-                                cdl.countDown();
+                    for (EventProcessingEntry eventProcessingEntry : threadEventEntries) {
+                        EventProcessingEntry beingProcessed = null;
+                        if (thread != nullThread &&
+                                (beingProcessed = currentlyProcessedEvent.putIfAbsent(thread.name(), eventProcessingEntry)) != null) {
+                            // previous event handling on this thread is not terminated yet, which means that
+                            // the event was fired by event processing itself. Potentially deadlock condition.
+                            EventProcessingEntry beinfin = beingProcessed;
+                            StringBuffer sb = new StringBuffer();
+                            sb.append("\n=======================================================\n")
+                              .append("*  WARNING: handlePendingEvents: retrieved event         *\n")
+                              .append("*   ").append(eventProcessingEntry.event).append(" *\n")
+                              .append("*   was fired during handling of                         *\n")
+                              .append("*   ").append(beinfin.event).append(" *\n")
+                              .append("*   To prevent deadlocks previous event handling         *\n")
+                              .append("*   will be terminated.                                  *\n")
+                              .append("=========================================================*\n");
+                            log.log(Level.WARNING, sb.toString());
+                            beingProcessed.handlingThread.interrupt();
+                            thread.resume();
+                            continue;
                         }
-                    });
-                } // for threadEvents
-                executor.submit(()->thread.resume());
-            } // for groups
-            if ( nonBoundExists ) {
-                cdl.await();
-                events.resume();
-            }
-            log.fine("--ended events loop--");
-        } catch (Throwable th) {
+                        executor.submit(() -> {
+                            try {
+                                eventProcessingEntry.handlingThread = Thread.currentThread();
+                                log.log(Level.FINE, ()->"Starting processing for " + eventProcessingEntry.event);
+                                handleEvent(eventProcessingEntry.event, ctx);
+                            } catch (Throwable th) {
+                                log.log(Level.SEVERE, "Failed handling of " + eventProcessingEntry.event, th);
+                            } finally {
+                                if (cdl != null)
+                                    cdl.countDown();
+                                log.log(Level.FINE, ()->"Completed processing for " + eventProcessingEntry.event);
+                                currentlyProcessedEvent.remove(thread.name());
+                                if ( threadEventsCnt.decrementAndGet() == 0 )
+                                   thread.resume();
+                            }
+                        });
+                    } // for threadEvents
+                } // for groups
+                if (nonBoundExists) {
+                    cdl.await();
+                    events.resume();
+                }
+                log.fine("--ended events loop--");
+        } catch(Throwable th){
             log.log(Level.SEVERE, "handlePendingEvents.handleEventLoop", th);
         }
     } // handlePendingEvents
@@ -193,7 +238,7 @@ public class EventsProcessor
                             Object result = null;
                             switch (method.getName()) {
                                 case "name":
-                                    result = "";
+                                    result = "==synthetic-tread==";
                                     break;
                                 case "uniqueID":
                                     result = Long.MIN_VALUE;
@@ -219,4 +264,18 @@ public class EventsProcessor
     {
         void  handle(E event, HandlerData data, ExecutionContext ctx) throws Exception;
     }
+
+    private class EventProcessingEntry
+    {
+        Event event;
+        ThreadReference thread;
+        Thread handlingThread;
+
+        EventProcessingEntry(Event event, ThreadReference thread)
+        {
+            this.event = event;
+            this.thread = thread;
+        }
+    }
+
 }

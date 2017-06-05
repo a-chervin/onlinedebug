@@ -100,7 +100,6 @@ public class RemoteJVM
         for(ConfigEntry configEntry : configuration.getEntries()) {
             apply(configEntry);
         }
-//        apply(AsyncRemoteExecutor.getInstance().getConfig());
         return postponed;
     } // compile Configuration
 
@@ -143,6 +142,7 @@ public class RemoteJVM
     private boolean installLineBP(final ConfigEntry entry) throws Exception
     {
         LineBreakpointSpec breakPoint = (LineBreakpointSpec) entry.getBreakPoint();
+        checkIfJdk(breakPoint.getTargetClass(), null);
         List<ReferenceType> types = getClass(breakPoint.getTargetClass());
         if ( types.size() == 0 ) {
             registerPosponedInstall(breakPoint.getTargetClass(), (t) -> installLineBP(entry, t));
@@ -291,6 +291,7 @@ public class RemoteJVM
         MethodEntryBreakPointSpec breakPoint = (MethodEntryBreakPointSpec) entry.getBreakPoint();
         if ( breakPoint.getTargetClass() == null )
             throw new IllegalArgumentException("class is not specified");
+        checkIfJdk(breakPoint.getTargetClass(), breakPoint.getMethod());
         List<ReferenceType> types = getClass(breakPoint.getTargetClass());
         if ( types.size() == 0 ) {
             registerPosponedInstall(breakPoint.getTargetClass(), (t) -> installMethodEntry(entry,  t));
@@ -324,6 +325,7 @@ public class RemoteJVM
         MethodExitBreakPointSpec breakPoint = (MethodExitBreakPointSpec) entry.getBreakPoint();
         if ( breakPoint.getTargetClass() == null )
             throw new IllegalArgumentException("class is not specified");
+        checkIfJdk(breakPoint.getTargetClass(), breakPoint.getMethod());
         List<ReferenceType> types = getClass(breakPoint.getTargetClass());
         if ( types.size() == 0 ) {
             registerPosponedInstall(breakPoint.getTargetClass(), (t) -> installMethodExit(entry, t));
@@ -463,6 +465,25 @@ public class RemoteJVM
         return types;
     }
 
+
+    private void checkIfJdk(String clazz, String method)
+    {
+        if ( !clazz.startsWith("java."))
+            return;
+        StringBuilder sb = new StringBuilder("\n")
+          .append("==============================================\n")
+          .append("*  Warning: breaking on JDK class            *\n")
+          .append("*  ").append(clazz).append("      *\n")
+          .append("*  may bring to locks and unexpected results *\n");
+        if ( clazz.equals(Locale.class.getName()) &&
+                "getDefault".equals(method) )
+            sb.append("* >Locale.getDefault()< is VERY discouraged  *\n")
+              .append("*  break point as it's widely used in jdk    *\n")
+              .append("*  code, this choise must be reconsidered    *\n");
+
+        sb.append("==============================================\n");
+        log.log(Level.WARNING, sb.toString());
+    } // checkIfJdk
 
     private class PostponedInstaller implements Function<List<ReferenceType>,Boolean>
     {

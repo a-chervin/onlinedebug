@@ -171,15 +171,29 @@ public abstract class AutomaticTestcaseBase
         proc.getOutputStream().write(new byte[]{(byte)'a', (byte)'\n'});
         proc.getOutputStream().flush();
 
-        boolean docontinue = true;
-        while(docontinue) {
-            try {
-               handler.handlePendingEvents();
-               docontinue = proc.isAlive();
-            } catch (Exception ex) {
-                docontinue = false;
-            }
-        } // while
+
+        Thread t = new Thread( ()-> {
+            boolean docontinue = true;
+            while(docontinue) {
+                try {
+                    handler.handlePendingEvents();
+                    docontinue = proc.isAlive();
+                } catch (Exception ex) {
+                    docontinue = false;
+                }
+            }} // while
+        );
+        t.start();
+        t.join(15000);
+        if ( t.isAlive() ) {
+            StackTraceElement[]  stack = t.getStackTrace();
+            StringBuilder sb = new StringBuilder();
+            for(StackTraceElement th: stack)
+                    sb.append(th).append("\n");
+            // something got wrong
+            t.stop();
+            throw new Exception("execution timeout at: " + sb);
+        }
     } // runTest
 
     // callback

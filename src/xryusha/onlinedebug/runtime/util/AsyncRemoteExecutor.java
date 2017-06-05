@@ -42,19 +42,28 @@ public class AsyncRemoteExecutor extends RemotingBase
     {
     }
 
-    public void init(ThreadReference thread) throws Exception
+    /**
+     * Installs remote agent on target VM
+     * @param thread
+     * @return true if executed successfully false otherwise
+     * @throws Exception
+     */
+    public boolean init(ThreadReference thread) throws Exception
     {
-        if ( state.get() == State.Initialization ||
-                     state.get() == State.Initialized )
-            return;
+        if ( state.get() == State.Initialization  )
+           return false;
+        if (  state.get() == State.Initialized )
+            return true;
 
         if ( !state.compareAndSet(State.Initial, State.Initialization) &&
                 !state.compareAndSet(State.Failed, State.Initialization)  )
-            return;
+            return false;
 
         try {
             Class slave = RemoteAgent.class;
-            RemoteInstaller.getInstance().install(thread, Arrays.asList(slave));
+            boolean inited = RemoteInstaller.getInstance().install(thread, Arrays.asList(slave));
+            if (!inited)
+                return false;
             CallSpec init = new CallSpec(slave.getName(), RemoteAgent.initMethodName);
             Value sockAddr = getValue(thread, init);
             String addr = ((StringReference)sockAddr).value();
@@ -65,6 +74,7 @@ public class AsyncRemoteExecutor extends RemotingBase
             ConfigEntry config = this.getConfig();
             RemoteJVM.lookup(thread.virtualMachine()).apply(config);
             state.set(State.Initialized);
+            return true;
         } catch (Throwable ex) {
             state.set(State.Failed );
             log.log(Level.SEVERE, getClass().getSimpleName() + ": fail", ex);

@@ -82,9 +82,9 @@ public class PrintAction extends Action<PrintSpec>
         RemoteInstaller installer = RemoteInstaller.getInstance();
         try {
             if ( isAsyncWriterInstalled == null ) {
-                installer.install(thread, Arrays.asList(AsyncWriter.class/*, PrintingTask.class, VerifyingTask.class*/));
-                isAsyncWriterInstalled = Boolean.TRUE;
-                log.log(Level.FINE, "remote AsyncWriter installed");
+                boolean installed = installer.install(thread, Arrays.asList(AsyncWriter.class/*, PrintingTask.class, VerifyingTask.class*/));
+                isAsyncWriterInstalled = Boolean.valueOf(installed);
+                log.log(Level.INFO, "remote AsyncWriter installed {1}", installed);
             }
         } catch (Throwable ex) {
             log.log(Level.WARNING, "failed installing remote AsyncWriter, running in synchronous mode: ", ex);
@@ -623,95 +623,5 @@ public class PrintAction extends Action<PrintSpec>
             return th;
         }
     }
-
-//
-//
-/////////////////////////////////////
-//    public class TEST
-//    {
-//        private final static String INSTALLER_ROOT = "/installer";
-//        private final static String TEMPLATE_FILE = "RemoteLoader.template";
-//        private final static String PACKAGE_TOKEN = "{{PACKAGE}}";
-//        private final static String FILENAME_TOKEN = "{{CLASSNAME}}";
-//        private final static String CLASSES_TOKEN = "{{CLASSES}}";
-//
-//
-//
-//
-//        public void run(ThreadReference thread) throws Exception
-//        {
-//            RemoteInstaller.getInstance()
-//                           .install(thread, Arrays. asList(Compiler.class));
-//            String[] generated = generateLoaderCode(Arrays.asList(String.class,File.class));
-//            String className = generated[0];
-//            String code = generated[1];
-//
-//
-//            RefChain pchain = new RefChain();
-//            pchain.getRef().add(new RefPath(System.class.getName(), "out"));
-//            CallSpec print = new CallSpec(null, "println");
-//            pchain.getRef().add(print);
-//            SyntheticRValue msg = new SyntheticRValue();
-//            print.getParams().add(msg);
-//
-//            msg.setType(String.class.getName());
-//            msg.setValue(thread.virtualMachine().mirrorOf(">>>>>>> Before compile"));
-//            getValue(thread, pchain);
-//
-//
-//            RefChain chain = new RefChain();
-//            chain.getRef().add(new RefPath(Compiler.class.getName(), Compiler.INSTANCE.name()));
-//            CallSpec call = new CallSpec(null,"compile");
-//            call.getParams().add(new Const(className));
-//            call.getParams().add(new Const(code));
-//            call.getParams().add(new Const("1.6"));
-//            chain.getRef().add(call);
-//            try {
-//                Value val = getValue(thread, chain);
-//                System.out.println(val);
-//            } catch (Throwable ex) {
-//                ex.printStackTrace();
-//            }
-//            msg.setValue(thread.virtualMachine().mirrorOf(">>>>>>> after compile"));
-//            getValue(thread, pchain);
-//
-//            //byte[] compiled = Compiler.INSTANCE.compile(className, code, "1.6");
-//        } // run
-//
-//
-//        private String[] generateLoaderCode(List<Class> classes) throws IOException
-//        {
-//            String loadedTemplate;
-//            try (InputStream template = RemoteInstaller.class.getResourceAsStream(TEMPLATE_FILE)) {
-//                if (template == null)
-//                    throw new FileNotFoundException(TEMPLATE_FILE);
-//                StringWriter swr = new StringWriter();
-//                for (int ch = template.read(); ch != -1; ch = template.read())
-//                    swr.write(ch);
-//                loadedTemplate = swr.toString();
-//            }
-//            String rnd = Long.toHexString(System.currentTimeMillis()).toUpperCase();
-//            String className = "RemoteLoader_"
-//                    + classes.get(0).getSimpleName()
-//                    + "_" + rnd;
-//            String packaged = loadedTemplate.replace(PACKAGE_TOKEN, "onlinedebug.runtime.installer");
-//            String renamed = packaged.replace(FILENAME_TOKEN, className);
-//            String qualifiedName = "onlinedebug.runtime.installer." + className;
-//
-//
-//            StringBuilder sb = new StringBuilder();
-//            for (int inx = 0; inx < classes.size(); inx++) {
-//                Class clazz = classes.get(inx);
-//                if (inx > 0)
-//                    sb.append(", ");
-//                sb.append('"')
-//                        .append(clazz.getName())
-//                        .append('"');
-//            } // all classes
-//            String classesList = sb.toString();
-//            String ready = renamed.replace(CLASSES_TOKEN, classesList);
-//            return new String[]{qualifiedName, ready};
-//        } // generateLoaderCode
-//    } // TEST
 }
 
