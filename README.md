@@ -1,11 +1,17 @@
-The project is aimed to be useful for java developer. The most obvious use case of this utility is simplification of troubleshooting process and code investigation in places where regular debugging is impossible or problematic: 
-
+<h4>The project is aimed to be useful for java developer. The most obvious use case of this utility<br>
+    is simplification of troubleshooting process and code investigation in places where regular<br> debugging
+    is impossible or problematic:</h4>
+    
 <ul>
-  <li>QA/system tests etc  environments</li>
-  <li>Investigation of sporadically happening problems or long running (say, overnight) data collection</li>
-  <li>Running code is too far and networking overhead becomes significant </li>
+  <li><strong>QA</strong>/system tests etc environments  <!--<img src="images/qa_env_2.png" />-->
+  <img src="images/qa_env_6.png"/>
+  </li>
+  <li><strong>I</strong>nvestigation of sporadically happening problems or long running (say, overnight) data collection</li>
+  <li><strong>R</strong>unning code is too far and networking overhead becomes significant 
+      <img src="images/very_far_6.png"/>
+  </li>
   <li>
-   Reproducing complicated scenario: for example, just to check smsEngine.sendMessage() tons  of irrelevant configurations required:
+   <strong>R</strong>eproducing complicated scenario: for example, just to check <i>smsEngine.sendMessage()</i> tons  of irrelevant configurations required:
    <pre>
         void alert(String customerId, String storeId, String productId)
         {
@@ -23,15 +29,15 @@ The project is aimed to be useful for java developer. The most obvious use case 
    </pre>
  </li>
  <li>
-    “fast and dirty” workaround for problems which can’t be fixed currently but blocks working on something else:
+    “<strong>F</strong>ast and dirty” workaround for problems which can’t be fixed currently but block working on something else:
      <pre>
-        void ourMethod()
-        {
-            //// something
-            if ( !valid() )
-               throw new IllegalArgumentException("Ooops..");
-            //// something
-        }
+       void ourMethod()
+       {
+           //// something
+           if ( !valid() )
+              throw new IllegalArgumentException("Ooops..");
+           //// something
+       }
 
          boolean valid()
          { 
@@ -39,12 +45,12 @@ The project is aimed to be useful for java developer. The most obvious use case 
          }     
  </pre>
  </li>
- <li>or just library source code is not available but still must be investigated in different cases </li>
+ <li><strong>o</strong>r just library source code is not available but still must be investigated in different cases </li>
 </ul>
 
 Without modification/recompilation of applicative code this utility allows configuration-based non-intrusive monitoring and manipulation of remote jvm. Upon specified event type (arriving to specific source code line, method entry/exit, throwing exception or field modification) it performs required actions, as:
 <ul>
-  <li>collecting and logging to console or file information of:
+<li><strong>c</strong>ollecting and logging to console or file information of:
       <ul>
           <li>specified variables values</li>
           <li>all visible local variables values</li>
@@ -57,7 +63,7 @@ Without modification/recompilation of applicative code this utility allows confi
       </ul>
    </li>
    <li>
-      assigning value to variables where value may by 
+   <strong>a</strong>ssigning value to variables where value may by 
       <ul>
           <li>constant value</li>
           <li>value of another variable</li>
@@ -65,9 +71,9 @@ Without modification/recompilation of applicative code this utility allows confi
           <li>new instance from arbitrary constructor signature</li>
        </ul>
     </li>
-    <li>arbitrary method invocation </li>
+    <li><strong>a</strong>rbitrary method invocation </li>
     <li>
-      enforcing return from currently executed method with configured return value: 
+    <strong>e</strong>nforcing return from currently executed method with configured return value: 
       <pre>
           boolean valid()
           {
@@ -80,7 +86,7 @@ Without modification/recompilation of applicative code this utility allows confi
 
    All specified may be performed in conditional way (<i>equals(..,..)</i>, <i>less/greater</i>, <i>isnull</i>, <i>not(...)</i>, nested <i>or(...)</i> / <i>and(...)</i>)
  
-The utility is based on java debug interface and  no application bytecode modifications involved, as a result  when it disconnects from monitored application the last returns to its initial state. 
+The utility is based on java debug interface and  no application bytecode modifications are involved, as a result  when it disconnects from monitored application the last returns to its initial state. 
  
  
    Various configuration examples may be found in <i>/xryusha/onlinedebug/testcases/**.xml</i> files, detailed configuration elements explanation are provided in <i>example_breakpoints.xml</i>, <i>example_actions.xml</i>, <i>example_rvalues.xml</i> and <i>example_condition.xml</i>.
