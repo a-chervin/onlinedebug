@@ -1,3 +1,20 @@
+/**
+ * Licensed to the a-chervin (ax.chervin@gmail.com) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * a-chervin licenses this file under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package xryusha.onlinedebug;
 
 import com.sun.jdi.ReferenceType;
@@ -11,6 +28,7 @@ import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -50,15 +68,17 @@ public class Main
                  "localhost:5005",
                  "C:\\java\\projects\\onlinedebug\\test\\" +
 //                "onlinedebug\\testcases\\nested\\FromAnonymousMethodInner_accessMethod.xml"
-//                  "onlinedebug\\testcases\\breakpoints\\modification\\ModificationBreakpoint.xml"
+//                  "xryusha\\onlinedebug\\testcases\\breakpoints\\modification\\ModificationBreakpoint.xml"
 //                    "onlinedebug\\testcases\\breakpoints\\methodrelated\\InnerMethodEntryBreakpoint.xml"
 //                    "onlinedebug\\testcases\\local\\LocalArrayDynamicIndex.xml"
 //                    "xryusha\\onlinedebug\\testcases\\actions\\ReturnOnException.xml"
-                      "xryusha\\onlinedebug\\testcases\\local\\LocalVars.xml"
+//                      "xryusha\\onlinedebug\\testcases\\local\\LocalVars.xml"
+//                      "xryusha\\onlinedebug\\testcases\\nested\\NestedCallChain.xml"
+//                      "xryusha\\onlinedebug\\testcases\\jdk\\LocaleAccess.xml"
+//                        "xryusha\\onlinedebug\\testcases\\nested\\FromConstructor.xml"
+                        "xryusha\\onlinedebug\\testcases\\nested\\FromMethodInner.xml"
         };
- */
-
-
+*/
         if ( args == null || args.length == 0 ) {
             doHelp(null);
             return;
