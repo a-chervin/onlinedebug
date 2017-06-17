@@ -297,6 +297,7 @@ public class PrintAction extends Action<PrintSpec>
     {
         Constructor fos = new Constructor(FileOutputStream.class.getName());
         fos.getParams().add(new Const(remoteFile, String.class.getName()));
+        fos.getParams().add(new Const(Boolean.TRUE.toString(), boolean.class.getName()));
         fos.setType(OutputStream.class.getName());
         Constructor bos = new Constructor(BufferedOutputStream.class.getName());
         bos.getParams().add(fos);
@@ -592,7 +593,7 @@ public class PrintAction extends Action<PrintSpec>
                     Path path = new File(targetPath).toPath();
                     FileChannel file = FileChannel.open(path,
                             StandardOpenOption.CREATE,
-                            StandardOpenOption.TRUNCATE_EXISTING,
+                            StandardOpenOption.APPEND,
                             StandardOpenOption.WRITE);
                     OutputStream os = Channels.newOutputStream(file);
                     target = new PrintStream(os, true);
