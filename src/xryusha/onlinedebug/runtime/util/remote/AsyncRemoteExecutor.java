@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package xryusha.onlinedebug.runtime.util;
+package xryusha.onlinedebug.runtime.util.remote;
 
 import com.sun.jdi.StringReference;
 import com.sun.jdi.ThreadReference;
@@ -30,6 +30,7 @@ import xryusha.onlinedebug.runtime.RemotingBase;
 import xryusha.onlinedebug.runtime.actions.Action;
 import xryusha.onlinedebug.runtime.actions.RuntimeActionSpec;
 import xryusha.onlinedebug.runtime.func.ErrorproneFunction;
+import xryusha.onlinedebug.runtime.util.RemoteInstaller;
 
 import java.io.IOException;
 import java.io.InputStream;

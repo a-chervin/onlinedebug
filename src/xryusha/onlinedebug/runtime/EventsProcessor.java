@@ -31,7 +31,7 @@ import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.event.*;
 import xryusha.onlinedebug.config.Configuration;
 import xryusha.onlinedebug.runtime.handlers.*;
-import xryusha.onlinedebug.runtime.util.AsyncRemoteExecutor;
+import xryusha.onlinedebug.runtime.util.remote.AsyncRemoteExecutor;
 import xryusha.onlinedebug.util.Log;
 import xryusha.onlinedebug.runtime.util.DaemonThreadFactory;
 
