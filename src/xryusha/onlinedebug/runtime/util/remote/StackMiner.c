@@ -1,46 +1,45 @@
-/**
- * Licensed to the a-chervin (ax.chervin@gmail.com) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * a-chervin licenses this file under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <jni.h>
 #include <jvmti.h>
-#include "StackMiner.h"
+#include "xryusha_onlinedebug_runtime_util_StackMiner.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define MAX_FRAME_DEPTH 10
+#define MAX_LOCAL_FRAME_DEPTH 10
+#define UNDEFINED 0x1FFFFFFF
 
 typedef struct {
     jvmtiLocalVariableEntry* locals;
     int localsCount;
 } cachedLocalVarsEntry;
 
+typedef enum {
+    OK, FAIL, IGNORE
+} getValueStatus;
+
+typedef struct {
+    getValueStatus status;
+    int slot;
+    char* name;
+    jobject value;
+    int valueDepth;
+} getValueResult;
+
 void logError(JNIEnv *env, char* message, jvmtiError error);
 int initCollectionAPI(JNIEnv *env);
 int initConvertes(JNIEnv *env);
-int initConverter(JNIEnv *env, char* className, char primitiveType, jclass* globalClass, jmethodID* valueOf );
-jobject getValue(JNIEnv* env, jstring name, jthread currentThread, 
-                 jvmtiFrameInfo* frames, cachedLocalVarsEntry cachedLocals[], 
-                 int startDepth, int maxDepth);
+int initConverter(JNIEnv *env, char* className, char primitiveType, jclass* globalClass, jmethodID* valueOf);
+jvmtiError getValue(JNIEnv* env, jstring name, jthread currentThread, jvmtiFrameInfo* frames,
+                    cachedLocalVarsEntry cachedLocals[],  int startDepth, int maxDepth,
+                    getValueResult* value);
+jobject asJObject(JNIEnv* env, jthread currentThread, int depth, jvmtiLocalVariableEntry* locals, int index);
+
 
 static jvmtiEnv *g_jvmti = NULL;
 static jclass    g_declaringClass = NULL;
@@ -70,7 +69,8 @@ static jmethodID g_valueOfChar = NULL;
 static jmethodID g_valueOfBoolean = NULL;
 
 
-JNIEXPORT jboolean JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMiner_init
+JNIEXPORT jboolean JNICALL
+Java_xryusha_onlinedebug_runtime_util_remote_StackMiner_init
   (JNIEnv *env, jclass clazz)
 {
    JavaVM *jvm = NULL;
@@ -78,17 +78,18 @@ JNIEXPORT jboolean JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMin
    jclass hashMapClass = NULL;
    jvmtiCapabilities capabilities;
 
+
    g_declaringClass = clazz;
    g_log = (*env)->GetStaticMethodID(env, g_declaringClass, "log", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
-   if ( g_log == NULL ) 
+   if ( g_log == NULL )
        return JNI_FALSE;
-   
+
    error = (*env)->GetJavaVM(env, &jvm);
     if ( error != JNI_OK || jvm == NULL ) {
         logError(env, "GetJavaVM failed", error);
         return JNI_FALSE;
     }
-    
+
     error = (*jvm)->GetEnv(jvm, (void**)&g_jvmti, JVMTI_VERSION_1_0);
     if ( error != JNI_OK || g_jvmti == NULL ) {
         logError(env, "Unable to access JVMTI", error);
@@ -100,9 +101,9 @@ JNIEXPORT jboolean JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMin
     error = (*g_jvmti)-> AddCapabilities(g_jvmti, &capabilities);
     if ( error != JVMTI_ERROR_NONE ) {
       logError(env, "Unable to set can_access_local_variables capability", error);
-      return JNI_FALSE;        
+      return JNI_FALSE;
     }
-    
+
     capabilities.can_force_early_return = 1;
     error = (*g_jvmti)-> AddCapabilities(g_jvmti, &capabilities);
     if ( error != JVMTI_ERROR_NONE ) {
@@ -111,34 +112,36 @@ JNIEXPORT jboolean JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMin
 
     if ( initCollectionAPI(env) != JNI_OK )
         return JNI_FALSE;
-    
+
     if ( initConvertes(env) != JNI_OK )
         return JNI_FALSE;
-    
+
     return JNI_TRUE;
 }  /* init */
 
 
-
-JNIEXPORT jobject JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMiner_extract
+JNIEXPORT jobject JNICALL
+Java_xryusha_onlinedebug_runtime_util_remote_StackMiner_extract
   (JNIEnv *env, jclass clazz, jobject list)
 {
    jint size;
    jvmtiError error;
-   jobject hashMap = NULL; 
+   jobject hashMap = NULL;
    jthread currentThread;
-   jvmtiFrameInfo frames[MAX_FRAME_DEPTH];
+   jvmtiFrameInfo frames[MAX_LOCAL_FRAME_DEPTH];
    jint framesDepth;
-   cachedLocalVarsEntry cachedLocals[MAX_FRAME_DEPTH];
-    
+   jobject value = NULL;
+   cachedLocalVarsEntry cachedLocals[MAX_LOCAL_FRAME_DEPTH];
+
+
     error = (*g_jvmti)->GetCurrentThread(g_jvmti, &currentThread);
     if ( error != JVMTI_ERROR_NONE) {
         logError(env, "GetCurrentThread error", error);
         return NULL;
     }
-    
-    error = (*g_jvmti)->GetStackTrace(g_jvmti, currentThread, 
-                                      0, MAX_FRAME_DEPTH, 
+
+    error = (*g_jvmti)->GetStackTrace(g_jvmti, currentThread,
+                                      0, MAX_LOCAL_FRAME_DEPTH,
                                       frames, &framesDepth);
     if (error != JVMTI_ERROR_NONE) {
         logError(env, "GetStackTrace error", error);
@@ -146,141 +149,210 @@ JNIEXPORT jobject JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMine
     }
 
     hashMap = (*env)->NewObject(env, g_hashMapClass, g_hashMapCtor, 1);
-    size = (*env)->CallIntMethod(env, list, g_listSize);
+    size = list != NULL ? (*env)->CallIntMethod(env, list, g_listSize) : UNDEFINED;
     if (size == 0)
         return hashMap;
-    
+
     memset(cachedLocals, 0, sizeof(cachedLocals));
     for (int ii = 0; ii < size; ii++) {
-        jstring name = (jstring) (*env)->CallObjectMethod(env, list, g_listGet, ii);
-        jobject value = getValue(env, name, currentThread, frames, cachedLocals, 1, framesDepth);
-        jstring globalName = (*env)->NewGlobalRef(env, name);
-        (*env)->CallObjectMethod(env, hashMap, g_hashMapPut, globalName, value);
+        int index = ii;
+        getValueResult result;
+        jstring name = NULL;
+        if ( list != NULL ) {
+            name = (jstring) (*env)->CallObjectMethod(env, list, g_listGet, ii);
+            index = UNDEFINED;
+        }
+        else
+            result.slot = index;
+
+        error = getValue(env, name, currentThread, frames, cachedLocals,
+                         1, /* depth-0 is this native method */
+                         framesDepth, &result);
+        if ( error != JVMTI_ERROR_NONE )
+            return NULL;
+        if ( result.status == IGNORE )
+            continue;
+         /* if jni's fine should it fail or continue? */
+        if ( result.status == FAIL )
+            continue;
+
+        if ( size == UNDEFINED ) {
+            size = cachedLocals[1].localsCount;
+        }
+
+        jstring globalName = name != NULL ?
+                               (*env)->NewGlobalRef(env, name) :
+                                  (*env)->NewStringUTF(env, result.name);
+
+        (*env)->CallObjectMethod(env, hashMap, g_hashMapPut, globalName, result.value);
         (*env)->DeleteLocalRef(env, name);
     }
+/*
+    for(int inx = 0; inx < MAX_FRAME_DEPTH && cachedLocals[inx].locals != NULL; inx++ )
+        (*g_jvmti)->Deallocate(g_jvmti,  (void*)cachedLocals[inx].locals);
+    for(int inx = 0; inx < framesDepth ; inx++ )
+        (*g_jvmti)->Deallocate(g_jvmti,  (void*)&frames[inx]);
+*/
     return hashMap;
  } /* extract */
 
 
-
-jobject getValue(JNIEnv* env, jstring name, jthread currentThread, 
-                 jvmtiFrameInfo* frames, cachedLocalVarsEntry cachedLocals[], 
-                 int currentDepth, int maxDepth)
+jvmtiError getValue(JNIEnv* env, jstring name, jthread currentThread,
+                    jvmtiFrameInfo* frames, cachedLocalVarsEntry cachedLocals[],
+                    int currentDepth, int maxDepth, getValueResult* result)
 {
     jvmtiError error;
     jvmtiLocalVariableEntry* locals;
     jint localsCounter;
-    jint framesDepth;
     jobject retrieved;
     jobject globalizedRetrieved;
     char buffer[50];
-            
-    const char* nameAr = (*env)->GetStringUTFChars(env, name, 0);
+    int index;
+    char* nameAr = NULL;
+
     /* if this depth is searched 1st time retrieve locals table */
     locals = cachedLocals[currentDepth].locals;
     localsCounter = cachedLocals[currentDepth].localsCount;
     if ( locals == NULL ) {
-        error = (*g_jvmti)->GetLocalVariableTable(g_jvmti, 
+        error = (*g_jvmti)->GetLocalVariableTable(g_jvmti,
                                                   frames[currentDepth].method,
-                                                  &localsCounter, &locals);        
+                                                  &localsCounter, &locals);
         if ( error != JVMTI_ERROR_NONE) {
             logError(env, "jvmtiLocalVariableEntry error", error);
-            return NULL;
+            result->status = FAIL;
+            return error;
         }
+
         cachedLocals[currentDepth].locals = locals;
         cachedLocals[currentDepth].localsCount = localsCounter;
-    } /* gettable */
-    
-    for(int inx = 0; inx < localsCounter; inx++) {
-        if ( strcmp(nameAr,  locals[inx].name) )
-            continue;     
-        char sgn = *(locals[inx].signature);
-        switch( sgn ) {
-            case 'B':
-            case 'C':
-            case 'I':
-            case 'S':                
-            case 'Z': {
-              jint value;
-              error =  (*g_jvmti)->GetLocalInt(g_jvmti, currentThread, currentDepth, 
-                                               locals[inx].slot, &value);
-              if ( error != JVMTI_ERROR_NONE) {
-                 logError(env, "GetLocalInt error", error);
-                 return NULL;
-              }   
-              retrieved = sgn == 'B' ? (*env)->CallStaticObjectMethod(env, g_ByteClass, g_valueOfByte, (jbyte)value) :
-                          sgn == 'C' ? (*env)->CallStaticObjectMethod(env, g_CharClass, g_valueOfChar, (jchar)value) :
-                          sgn == 'I' ? (*env)->CallStaticObjectMethod(env, g_IntClass, g_valueOfInt, value) :
-                          sgn == 'S' ? (*env)->CallStaticObjectMethod(env, g_ShortClass, g_valueOfShort, (jshort)value) :
-                                       (*env)->CallStaticObjectMethod(env, g_ShortClass, g_valueOfShort, (jboolean)value);
-              break;
-            } /* ints */
-            case 'J' : {
-               jlong value;
-               error =  (*g_jvmti)->GetLocalLong(g_jvmti, currentThread, currentDepth, 
-                                                 locals[inx].slot, &value);
-               if ( error != JVMTI_ERROR_NONE) {
-                 logError(env, "GetLocalLong error", error);
-                 return NULL;
-               }   
-               retrieved = (*env)-> CallStaticObjectMethod(env, g_LongClass, g_valueOfLong, value);
-               break;
-            } /* long */
-            case 'D' : {
-                jdouble value;
-               error =  (*g_jvmti)->GetLocalDouble(g_jvmti, currentThread, currentDepth, 
-                                                   locals[inx].slot, &value);
-               if ( error != JVMTI_ERROR_NONE) {
-                 logError(env, "GetLocalDouble error", error);
-                 return NULL;
-               }   
-               retrieved = (*env)-> CallStaticObjectMethod(env, g_DoubleClass, g_valueOfDouble, value);                
-               break;
-            } /* double */
-            case 'F' : {
-               jfloat value;
-               error =  (*g_jvmti)->GetLocalFloat(g_jvmti, currentThread, currentDepth, 
-                                                   locals[inx].slot, &value);
-               if ( error != JVMTI_ERROR_NONE) {
-                 logError(env, "GetLocalDouble error", error);
-                 return NULL;
-               }   
-               retrieved = (*env)-> CallStaticObjectMethod(env, g_FloatClass, g_valueOfFloat, value);                
-               break;
-            } /* double */
-            case 'L' : {
-               error =  (*g_jvmti)->GetLocalObject(g_jvmti, currentThread, currentDepth, 
-                                                   locals[inx].slot, &retrieved);
-               if ( error != JVMTI_ERROR_NONE) {
-                 logError(env, "GetLocalDouble error", error);
-                 return NULL;
-               }   
-               break;
+    } /* locals == NULL */
+
+    if ( name != NULL )
+        nameAr = (*env)->GetStringUTFChars(env, name, 0);
+
+    index = UNDEFINED;
+    for(int inx = 0; nameAr != NULL && inx < localsCounter; inx++) {
+        if ( !strcmp(nameAr,  locals[inx].name) )
+            index = inx;
+        result->slot = index;
+    }
+    /* entry not found, try in next frame if possible */
+    if ( nameAr != NULL && index == UNDEFINED  ) {
+        if ( currentDepth < maxDepth  ) {
+            return  getValue(env, name, currentThread, frames,
+                             cachedLocals, currentDepth+1, maxDepth, result);
+            } else {
+                memset(buffer, 0, sizeof (buffer));
+                strcpy(buffer, "Field not found: ");
+                strcpy(buffer + strlen(buffer), nameAr);
+                logError(env, buffer, 0);
+                result->status = FAIL;
+                return JVMTI_ERROR_NONE;
             }
-            default: {
-                char* msg = "Unexpected field signature:  ";
-                msg[strlen(msg)-1] = sgn;
-                logError(env, msg, 0);
-                return NULL;
-            }
-        } /* switch signature */
-        if ( (*env)->ExceptionCheck(env)) {
-            (*env)->ExceptionDescribe(env);
-            return NULL;
-        }
+    } // nameAr != NULL && index == -1
+    else {
+        index = result->slot;
+        result->name = locals[index].name;
+        result->valueDepth = currentDepth;
+    }
+
+    /* variable is can't be used earlie than its declaration location */
+    if ( frames[currentDepth].location < locals[index].start_location ) {
+        result->status = IGNORE;
+        return JVMTI_ERROR_NONE;
+    }
+
+    globalizedRetrieved = NULL;
+    retrieved  = asJObject(env, currentThread, currentDepth, locals, index);
+    if (retrieved != NULL) {
         globalizedRetrieved = (*env)->NewGlobalRef(env, retrieved);
         (*env)->DeleteLocalRef(env, retrieved);
-        return globalizedRetrieved;
-    } /* for locals list */
-    if ( currentDepth < maxDepth )
-        return getValue(env, name, currentThread, frames, cachedLocals, currentDepth+1, maxDepth);
-    
-    memset(buffer, 0, sizeof(buffer));
-    strcpy(buffer, "Field not found: ");
-    strcpy(buffer + strlen(buffer), nameAr);
-    logError(env, buffer, 0);
-    return NULL;
+    }
+    result->value = globalizedRetrieved;
+    return JVMTI_ERROR_NONE;
 } /* getValue */
+
+jobject asJObject(JNIEnv* env, jthread currentThread, int depth, jvmtiLocalVariableEntry* locals, int index)
+{
+    jvmtiError error;
+    jobject retrieved;
+
+    char sgn = *(locals[index].signature);
+    switch( sgn ) {
+        case 'B':
+        case 'C':
+        case 'I':
+        case 'S':
+        case 'Z': {
+          jint value;
+          error =  (*g_jvmti)->GetLocalInt(g_jvmti, currentThread, depth,
+                                           locals[index].slot, &value);
+          if ( error != JVMTI_ERROR_NONE) {
+             logError(env, "GetLocalInt error", error);
+             return NULL;
+          }
+          retrieved = sgn == 'B' ? (*env)->CallStaticObjectMethod(env, g_ByteClass, g_valueOfByte, (jbyte)value) :
+                      sgn == 'C' ? (*env)->CallStaticObjectMethod(env, g_CharClass, g_valueOfChar, (jchar)value) :
+                      sgn == 'I' ? (*env)->CallStaticObjectMethod(env, g_IntClass, g_valueOfInt, value) :
+                      sgn == 'S' ? (*env)->CallStaticObjectMethod(env, g_ShortClass, g_valueOfShort, (jshort)value) :
+                                   (*env)->CallStaticObjectMethod(env, g_ShortClass, g_valueOfShort, (jboolean)value);
+          break;
+        } /* ints */
+        case 'J' : {
+           jlong value;
+           error =  (*g_jvmti)->GetLocalLong(g_jvmti, currentThread, depth,
+                                             locals[index].slot, &value);
+           if ( error != JVMTI_ERROR_NONE) {
+             logError(env, "GetLocalLong error", error);
+             return NULL;
+           }
+           retrieved = (*env)-> CallStaticObjectMethod(env, g_LongClass, g_valueOfLong, value);
+           break;
+        } /* long */
+        case 'D' : {
+            jdouble value;
+           error =  (*g_jvmti)->GetLocalDouble(g_jvmti, currentThread, depth,
+                                               locals[index].slot, &value);
+           if ( error != JVMTI_ERROR_NONE) {
+             logError(env, "GetLocalDouble error", error);
+             return NULL;
+           }
+           retrieved = (*env)-> CallStaticObjectMethod(env, g_DoubleClass, g_valueOfDouble, value);
+           break;
+        } /* double */
+        case 'F' : {
+           jfloat value;
+           error =  (*g_jvmti)->GetLocalFloat(g_jvmti, currentThread, depth,
+                                               locals[index].slot, &value);
+           if ( error != JVMTI_ERROR_NONE) {
+             logError(env, "GetLocalFloat error", error);
+             return NULL;
+           }
+           retrieved = (*env)-> CallStaticObjectMethod(env, g_FloatClass, g_valueOfFloat, value);
+           break;
+        } /* double */
+        case 'L' : {
+           error =  (*g_jvmti)->GetLocalObject(g_jvmti, currentThread, depth,
+                                               locals[index].slot, &retrieved);
+           if ( error != JVMTI_ERROR_NONE) {
+             logError(env, "GetLocalObject error", error);
+             return NULL;
+           }
+           break;
+        }
+        default: {
+            char* msg = "Unexpected field signature:  ";
+            msg[strlen(msg)-1] = sgn;
+            logError(env, msg, 0);
+            return NULL;
+        }
+    } /* switch signature */
+    if ( (*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionDescribe(env);
+        return NULL;
+    }
+    return retrieved;
+} /* asJObject */
 
 int initConvertes(JNIEnv *env)
 {

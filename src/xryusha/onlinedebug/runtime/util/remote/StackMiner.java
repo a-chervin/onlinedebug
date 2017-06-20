@@ -26,13 +26,13 @@ import java.util.logging.Logger;
 public class StackMiner
 {
     private final static Logger log = Log.getLogger();
-    native public static boolean init();
-    native public static Map<String,Object> extract(List<String> names);
 
     static {
         init();
     }
 
+    native public static boolean init();
+    native public static Map<String,Object> extract(List<String> names);
 
     static void log(String severity, String errType, String errMessage)
     {
