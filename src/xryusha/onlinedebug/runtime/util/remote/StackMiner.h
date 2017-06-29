@@ -21,7 +21,7 @@ JNIEXPORT jboolean JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMin
  * Signature: (Ljava/util/List;)Ljava/util/Map;
  */
 JNIEXPORT jobject JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMiner_extract
-  (JNIEnv *, jclass, jobject);
+  (JNIEnv *, jclass, jobject, jint);
 
 /*
  * Class:     xryusha_onlinedebug_runtime_util_remote_StackMiner
@@ -29,7 +29,7 @@ JNIEXPORT jobject JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMine
  * Signature: (Ljava/lang/String;Ljava/lang/Object;)Z
  */
 JNIEXPORT jboolean JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMiner_setValue
-  (JNIEnv *, jclass, jstring, jobject);
+  (JNIEnv *, jclass, jstring, jobject, jint);
 
 /*
  * Class:     xryusha_onlinedebug_runtime_util_remote_StackMiner

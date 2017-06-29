@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-#define MAX_LOCAL_FRAME_DEPTH 10
+#define MAX_LOCAL_FRAME_DEPTH 100
 #define UNDEFINED 0x1FFFFFFF
 
 static jmethodID g_logObject = NULL;    
@@ -41,8 +41,7 @@ JNIEXPORT jboolean JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMin
    jvmtiError error;
    jclass hashMapClass = NULL;
    jvmtiCapabilities capabilities;
-   
-           
+             
    g_declaringClass = clazz;
    g_log = (*env)->GetStaticMethodID(env, g_declaringClass, "log", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
    if ( g_log == NULL ) 
@@ -89,7 +88,7 @@ JNIEXPORT jboolean JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMin
 
 
 JNIEXPORT jobject JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMiner_extract
-  (JNIEnv *env, jclass clazz, jobject list)
+  (JNIEnv *env, jclass clazz, jobject list, jint callerFrame)
 {
    jint size;
    jvmtiError error;
@@ -113,7 +112,8 @@ JNIEXPORT jobject JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMine
     }
     
     jint startIndex, endIndex;    
-    if ( checkBounds(env, frames[1], &list, &startIndex, &endIndex) != JVMTI_ERROR_NONE )
+    if ( checkBounds(env, frames[callerFrame], 
+                     &list, &startIndex, &endIndex) != JVMTI_ERROR_NONE )
         return NULL;
     
     if ( startIndex == 0 && endIndex == 0 )
@@ -126,7 +126,6 @@ JNIEXPORT jobject JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMine
         jstring name = NULL;       
         
         memset(&result, 0, sizeof(result));
-        /* name could be already obrained in case of size == 1  */
         if ( list != NULL  ) { 
             name = (jstring) (*env)->CallObjectMethod(env, list, g_listGet, ii);            
             if ( (*env)->ExceptionCheck(env)) {
@@ -138,7 +137,9 @@ JNIEXPORT jobject JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMine
             result.slot = index;
         
         error = getValue(env, name, currentThread, frames, cachedLocals, 
-                         1, /* depth-0 is this native method */
+                         callerFrame, /* depth-0 is this native method
+                               depth-1 is a public method calling this native private  
+                             */
                          framesDepth, &result);
         if ( error != JVMTI_ERROR_NONE )
             return NULL;
@@ -149,7 +150,7 @@ JNIEXPORT jobject JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMine
             continue;
         
         if ( endIndex == UNDEFINED ) {
-            endIndex = cachedLocals[1].localsCount;
+            endIndex = cachedLocals[callerFrame].localsCount;
         }
         
         jstring globalName = name != NULL ?
@@ -157,6 +158,8 @@ JNIEXPORT jobject JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMine
                                   (*env)->NewStringUTF(env, result.name);
         
         (*env)->CallObjectMethod(env, hashMap, g_mapPut, globalName, result.value);
+        if ( result.value != NULL )
+            (*env)->DeleteLocalRef(env, result.value);
         if ( name != NULL )
            (*env)->DeleteLocalRef(env, name);
     } /* for startIndex -> endIndex */
@@ -173,7 +176,7 @@ JNIEXPORT jobject JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMine
 
 
 JNIEXPORT jboolean JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMiner_setValue
-  (JNIEnv* env, jclass clazz, jstring name, jobject value)
+  (JNIEnv* env, jclass clazz, jstring name, jobject value, jint callerFrame)
 {
    jvmtiError error;
    jthread currentThread;
@@ -189,7 +192,7 @@ JNIEXPORT jboolean JNICALL Java_xryusha_onlinedebug_runtime_util_remote_StackMin
     if ( error != JVMTI_ERROR_NONE )
        return JNI_FALSE;
 
-   error = setValue(env, name, value, currentThread, frames, cachedLocals, 1, framesDepth, &context);
+   error = setValue(env, name, value, currentThread, frames, cachedLocals, callerFrame, framesDepth, &context);
    return error == JVMTI_ERROR_NONE ? JNI_OK : JNI_FALSE;
 } /* Java_xryusha_onlinedebug_runtime_util_remote_StackMiner_setValue */
 
@@ -385,6 +388,7 @@ jvmtiError checkBounds(JNIEnv *env, jvmtiFrameInfo frame, jobject* list, jint* s
     if (!strcmp(ALL_ARGS, singleNameStr)) {
         error = (*g_jvmti)->GetArgumentsSize(g_jvmti, frame.method, endIndex);
         *startIndex = 1;
+//        *endIndex = UNDEFINED;
         *list = NULL;
     } /* if "all:args" */
     else if (!strcmp(ALL_LOCAL_VARS, singleNameStr)) {
@@ -449,6 +453,7 @@ jvmtiError findInLocalContext(JNIEnv* env /*, jvmtiLocalVariableEntry** localVal
     char buffer[50];
     int index;
     char* nameAr = NULL;
+    
     
     /* if this depth is searched 1st time retrieve locals table */
     locals = cachedLocals[currentDepth].locals;
