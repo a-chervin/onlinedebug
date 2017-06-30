@@ -44,11 +44,9 @@ import xryusha.onlinedebug.runtime.SyntheticRValue;
 
 public class PrintAction extends Action<PrintSpec>
 {
-    private final static Object localPrinterCreationLock = new Object();
     private final static Object remotePrinterCreationLock = new Object();
-
-    private final static Map<String,AsyncWriter> localAsyncWriters = new ConcurrentHashMap<>();
     private final static Map<String,Ref> remoteAppender = new ConcurrentHashMap<>();
+    private static Ref remotePrintingDispatcher = null;
 
     private static volatile Boolean isAsyncWriterInstalled;
     private static SyntheticRValue printfFormatRValue;
@@ -93,23 +91,25 @@ public class PrintAction extends Action<PrintSpec>
     {
         super(actionConfig);
         localFile = makeInternal(actionConfig.getLocalLogFile());
-        if ( shouldPrintLocal(actionConfig.getLocation()))
-           getCreateLocalOut(localFile);
+
+        if ( !shouldPrintRemote(actionConfig.getLocation()) )
+            return;
+
+        remoteFile = makeInternal(actionConfig.getRemoteLogFile());
+        arrayType = (ArrayType) getClass(thread, Object[].class.getCanonicalName());
 
         RemoteInstaller installer = RemoteInstaller.getInstance();
         try {
             if ( isAsyncWriterInstalled == null ) {
-                boolean installed = installer.install(thread, Arrays.asList(AsyncWriter.class/*, PrintingTask.class, VerifyingTask.class*/));
+                boolean installed = installer.install(thread, Arrays.asList(AsyncWriterDispatcher.class ));
+                if ( installed )
+                    remotePrintingDispatcher = createAsyncWriter(thread);
                 isAsyncWriterInstalled = Boolean.valueOf(installed);
                 log.log(Level.INFO, "remote AsyncWriter installed {1}", installed);
             }
         } catch (Throwable ex) {
-            log.log(Level.WARNING, "failed installing remote AsyncWriter, running in synchronous mode: ", ex);
-        }
-
-        remoteFile = makeInternal(actionConfig.getRemoteLogFile());
-        if ( shouldPrintRemote(actionConfig.getLocation()) ) {
-            arrayType = (ArrayType) getClass(thread, Object[].class.getCanonicalName());
+            log.log(Level.SEVERE, "running in synchronous mode as remote AsyncWriter installing failed", ex);
+            isAsyncWriterInstalled = Boolean.FALSE;
         }
     }
 
@@ -176,57 +176,39 @@ public class PrintAction extends Action<PrintSpec>
 
     private void printLocal(ThreadReference thread, List<LazyValueHolder> data, String format, String alreadyEvaluated) throws Exception
     {
-        AsyncWriter writer = localAsyncWriters.get(localFile);
+        Object[] args;
         if ( alreadyEvaluated != null ) {
-            writer.submit("%s", new Object[]{alreadyEvaluated});
-            return;
+            args = new Object[]{alreadyEvaluated};
+            format = "%s";
         }
-        Object[] args = new Object[data.size()];
-        for(int inx = 0; inx < data.size(); inx++) {
-            LazyValueHolder tuple = data.get(inx);
-            if ( tuple.strvalue != null ) {
-                args[inx] = tuple.strvalue;
-            } else {
-                args[inx] = toString(thread, tuple.jdivalue);
-            }
-        } // for data
-        writer.submit(format, args);
+        else {
+            args = new Object[data.size()];
+            for(int inx = 0; inx < data.size(); inx++) {
+                LazyValueHolder tuple = data.get(inx);
+                if ( tuple.strvalue != null ) {
+                    args[inx] = tuple.strvalue;
+                } else {
+                    args[inx] = toString(thread, tuple.jdivalue);
+                }
+            } // for data
+        }
+        AsyncWriterDispatcher.submit(localFile, format, args);
     } // printLocal
-
-
-    private AsyncWriter getCreateLocalOut(String localFile) throws IOException
-    {
-        AsyncWriter out = localAsyncWriters.get(localFile);
-        if ( out != null )
-            return out;
-        synchronized (localPrinterCreationLock) {
-            out = localAsyncWriters.get(localFile);
-            if ( out != null )
-                return out;
-            out = AsyncWriter.newInstance(localFile);
-            localAsyncWriters.put(localFile, out);
-        } // synch
-        return out;
-    } // getCreateLocalOut
-
 
     private Ref getCreatePrintChain(ThreadReference thread) throws Exception
     {
+        if ( remotePrintingDispatcher != null )
+            return remotePrintingDispatcher;
+
+        // for some reason async was not uploaded,
+        // going to use synchronous log file writing
         Ref writer = remoteAppender.get(remoteFile);
         if ( writer != null )
             return writer;
 
-        if ( isAsyncWriterInstalled == null ) {
-            int cnt = thread.virtualMachine().classesByName(AsyncWriter.class.getName()).size();
-            isAsyncWriterInstalled = Boolean.valueOf(cnt > 0);
-        }
-
         synchronized (remotePrinterCreationLock) {
             if ( remoteAppender.get(remoteFile ) == null ) {
-                if ( isAsyncWriterInstalled.booleanValue() )
-                    writer = createAsyncWriter(thread);
-                else
-                    writer = createSyncWriter(thread);
+                writer = createSyncWriter(thread);
                 remoteAppender.put(remoteFile, writer);
             } // inner if
         } // synch
@@ -235,43 +217,55 @@ public class PrintAction extends Action<PrintSpec>
 
     private Ref createAsyncWriter(ThreadReference thread) throws Exception
     {
-        Constructor ctor = new Constructor(AsyncWriter.class.getName());
-        ctor.getParams().add(new Const(remoteFile, String.class.getName()));
-        ObjectReference writer = (ObjectReference) getValue(thread, ctor);
-        writer.disableCollection();
-        RefChain refChain = new RefChain();
-        refChain.getRef().add(new SyntheticRValue(writer, true));
+        boolean canWrite = verifyCanWrite(thread, remoteFile);
+        if ( !canWrite )
+            throw new IllegalArgumentException("can't write remote file " + remoteFile);
 
-        CallSpec call = new CallSpec();
+        CallSpec call = new CallSpec(AsyncWriterDispatcher.class.getName(), "submit");
         call.setMethod("submit");
+        call.getParams().add(new Const(remoteFile, String.class.getName()));
         call.getParams().add(printfFormatRValue);
-
         call.getParams().add(printfArgsRValue);
-
-        refChain.getRef().add(call);
-        return refChain;
+        return call;
     } // createAsyncWriter
 
+    private boolean verifyCanWrite(ThreadReference thread, String file) throws Exception
+    {
+        LogTarget target = LogTarget.getTarget(file);
+        if ( target != LogTarget.FILE )
+            return true;
+        Constructor ctor = new Constructor(File.class.getName());
+        ctor.getParams().add(new Const(remoteFile, String.class.getName()));
+        ObjectReference fileRef = (ObjectReference) getValue(thread, ctor);
+        SyntheticRValue fileRVal = new SyntheticRValue(fileRef);
+        // file exists and writable
+        RefChain refChain = new RefChain();
+        refChain.getRef().add(fileRVal);
+        refChain.getRef().add(new CallSpec(null, "canWrite"));
+        BooleanValue can = (BooleanValue) getValue(thread, refChain);
+        if ( can.booleanValue() )
+            return true;
+        // file does not exist
+        RefChain writableParentChain = new RefChain();
+        writableParentChain.getRef().add(fileRVal);
+        writableParentChain.getRef().add(new CallSpec(null, "getParentFile"));
+        writableParentChain.getRef().add(new CallSpec(null, "canWrite"));
+        can = (BooleanValue) getValue(thread, writableParentChain);
+        return can.booleanValue();
+    }
 
     private Ref createSyncWriter(ThreadReference thread) throws Exception
     {
         ObjectReference printStream;
 
-        String target;
-        switch ( remoteFile ) {
-            case "":
-                target = "out";
-            case "stdout":
-                target = "out";
-            case "err":
-                target = "err";
-            case "stderr":
-                target = "err";
-                printStream = (ObjectReference)
-                        getValue(thread, new RefPath(System.class.getName(), target));
-                break;
+        LogTarget targetType = LogTarget.getTarget(remoteFile);
+        switch (targetType) {
+            case FILE:
+               printStream = createRemotePrinter(thread);
+               break;
             default:
-                printStream = createRemotePrinter(thread);
+                printStream = (ObjectReference)
+                        getValue(thread, new RefPath(System.class.getName(), targetType.systemStream));
         }
         printStream.disableCollection();
 
@@ -342,25 +336,6 @@ public class PrintAction extends Action<PrintSpec>
             type = String.class.getName();
         }
         String format = "s";
-/*
-        switch ( type ) {
-            case "byte":
-            case "short":
-            case "int":
-            case "long":
-                format = "d";
-                break;
-            case "float":
-            case "double":
-                format = "f";
-                break;
-            case "boolean":
-                format = "b";
-                break;
-            default:
-                format = "s";
-        }
-*/
         holder.setJdivalue(value);
         holder.setStrvalue(string);
         return format;
@@ -568,25 +543,48 @@ public class PrintAction extends Action<PrintSpec>
         }
     } //  class LazyValueHolder
 
+    public static class AsyncWriterDispatcher
+    {
+        private static ConcurrentMap<String,AsyncWriter> writers = new ConcurrentHashMap<>();
+
+        public static String submit(String path, String format, Object[] args) throws Exception
+        {
+            AsyncWriter wr = writers.get(path);
+            // not using lambda or writers.computeIfAbsent
+            // to make it run on remote 1.7 as well
+            if ( wr == null ) {
+                synchronized (writers) {
+                    wr = writers.get(path);
+                    if ( wr == null ) {
+                        wr = AsyncWriter.newInstance(path);
+                        writers.put(path, wr);
+                    }
+                }
+            } // eof if outer wr == null
+            return wr.submit(format, args);
+        } // submit
+    } // AsyncWriterDispatcher
+
     public static class AsyncWriter implements ThreadFactory
     {
         private final PrintStream target;
         private final ExecutorService appender;
         private final ExecutorService verifier;
+        private static boolean f;
 
         public static AsyncWriter newInstance(String targetPath) throws IOException
         {
             return new AsyncWriter(targetPath);
         }
 
-        public AsyncWriter(String targetPath) throws IOException
+        private AsyncWriter(String targetPath) throws IOException
         {
-            switch (targetPath) {
-                case "":
-                case "stdout":
+            LogTarget logTarget = LogTarget.getTarget(targetPath);
+            switch ( logTarget ) {
+                case STDOUT:
                     this.target = System.out;
                     break;
-                case "stderr":
+                case STDERR:
                     this.target = System.err;
                     break;
                 default:
@@ -596,8 +594,8 @@ public class PrintAction extends Action<PrintSpec>
                             StandardOpenOption.APPEND,
                             StandardOpenOption.WRITE);
                     OutputStream os = Channels.newOutputStream(file);
-                    target = new PrintStream(os, true);
-            }
+                    this.target = new PrintStream(os, true);
+            } // switch
 
             appender = Executors.newSingleThreadExecutor(this);
             verifier = Executors.newSingleThreadExecutor(this);
@@ -641,5 +639,36 @@ public class PrintAction extends Action<PrintSpec>
             return th;
         }
     }
+
+    enum LogTarget
+    {
+        STDOUT("out"), STDERR("err"), FILE(null);
+
+        private final String systemStream;
+
+        LogTarget(String systemStream)
+        {
+            this.systemStream = systemStream;
+        }
+
+        static LogTarget getTarget(String targetPath)
+        {
+            LogTarget target;
+            switch ( targetPath ) {
+                case "":
+                case "out":
+                case "stdout":
+                    target = STDOUT;
+                    break;
+                case "err":
+                case "stderr":
+                    target = STDERR;
+                    break;
+                default :
+                    target = FILE;
+            }
+            return target;
+        }  // getTarget
+    } // LogTarget
 }
 
