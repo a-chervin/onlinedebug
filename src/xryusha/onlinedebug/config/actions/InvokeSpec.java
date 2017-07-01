@@ -38,7 +38,7 @@ public class InvokeSpec extends CallSpec implements ActionSpec
     /**
      * Path to required methods
      */
-    @XmlElementRef
+    @XmlElementRef(required = false)
     private Ref accessPath;
 
     public Ref getAccessPath()

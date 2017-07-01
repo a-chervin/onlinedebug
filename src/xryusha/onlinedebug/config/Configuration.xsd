@@ -563,7 +563,7 @@
   <xs:complexType name="invoke">
     <xs:complexContent>
       <xs:extension base="call">
-        <xs:choice>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
           <xs:element ref="call"/>
           <xs:element ref="constructor"/>
           <xs:element ref="chain"/>
