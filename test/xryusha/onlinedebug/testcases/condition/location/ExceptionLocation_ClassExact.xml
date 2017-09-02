@@ -1,0 +1,36 @@
+<configuration>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.location.ExceptionLocation" line="20"/>
+        <print location="both">
+            <params>
+                <ref var="counter"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <onException  exception="java.sql.SQLTimeoutException" />
+        <if>
+           <location class="xryusha.onlinedebug.testcases.condition.location.ExceptionLocation"/>
+        </if>
+        <assign>
+            <ref class="xryusha.onlinedebug.testcases.condition.location.ExceptionLocation" var="counter"/>
+            <value><const value="10"/></value>
+        </assign>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.location.ExceptionLocation" line="22"/>
+        <print location="both">
+            <params>
+                <ref var="counter"/>
+            </params>
+        </print>
+    </entry>
+    <entry>
+        <atLocation class="xryusha.onlinedebug.testcases.condition.location.ExceptionLocation" line="25"/>
+        <print location="both">
+            <params>
+                <ref var="counter"/>
+            </params>
+        </print>
+    </entry>
+</configuration>

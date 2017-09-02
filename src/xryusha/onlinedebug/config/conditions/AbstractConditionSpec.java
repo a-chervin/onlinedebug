@@ -27,7 +27,10 @@ import javax.xml.bind.annotation.*;
  */
 @XmlType
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlSeeAlso({GroupConditionSpec.class, RelationConditionSpec.class, IsNullConditionSpec.class})
+@XmlSeeAlso({GroupConditionSpec.class,
+             RelationConditionSpec.class,
+             IsNullConditionSpec.class,
+             AtLocationConditionSpec.class})
 public abstract class AbstractConditionSpec implements Util
 {
     /**

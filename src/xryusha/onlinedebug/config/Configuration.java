@@ -66,6 +66,7 @@ public class Configuration
         public static final String CONDITION_EQUAL = "equal";
         public static final String CONDITION_ISNULL = "isnull";
         public static final String CONDITION_LESS = "less";
+        public static final String CONDITION_LOCATION = "location";
 
         public static final String VALUE_CALL = "call";
         public static final String VALUE_CONSTRUCTOR = "constructor";

@@ -25,24 +25,33 @@ public class StackMiner
 {
     private final static String GET_ARGS = "all:args";
     private final static String GET_LOCALS = "all:locals";
-//    private final static boolean inited;
-    final static Logger log;
+    private static Logger log;
+    
+    native private static boolean init();
+    native private static Map<String,Object> getValues(List<String> names, int callerFrame);
+    native private static boolean setValue(String name, Object value, int callerFrame);
+    native private static boolean enforceReturn(Object value, Thread targetThread);
+
     static {
         log = Logger.getGlobal();
 //        System.load("c:\\java\\projects\\onlinedebug\\src\\jni\\c\\Debug\\cygwin1.dll");
 //        System.load(
 //                "c:\\java\\projects\\onlinedebug\\src\\jni\\netbeans\\stackminer\\dist\\Debug\\Cygwin-Windows\\libstackminer.dll "
 //        );
+//        System.load(
+//                "e:\\cygwin\\insted\\bin\\cygwin1.dll");
+//        System.load(
+//                "c:\\java\\projects\\onlinedebug\\netbeans\\stackminer\\dist\\Debug\\Cygwin-Windows\\libstackminer.dll"
+//        );
+
+System.out.println("StachMiner: before init");
         boolean inited = init();
+System.out.println("StachMiner: after init: " + inited);
         if ( !inited )
             throw new IllegalStateException("StackMiner natives initialization failed");
     }
 
     
-    native private static boolean init();
-    native private static boolean setValue(String name, Object value, int callerFrame);
-    native private static boolean enforceReturn(Object value);
-    native private static Map<String,Object> extract(List<String> names, int callerFrame);
 
     public static Map<String,Object> getMethodArguments()
     {
@@ -68,12 +77,11 @@ public class StackMiner
     {
         return setValue(name, value, 2);
     }
-//
-//    public static boolean enforceEarlyReturn(Object value)
-//    {
-//        checkState();
-//        return enforceReturn(value);
-//    }
+
+    public static boolean enforceEarlyReturn(Thread targetThread, Object value)
+    {
+        return enforceReturn(value, targetThread);
+    }
 
     private static Map<String,Object> getValues(List<String> names)
     {
@@ -81,7 +89,7 @@ public class StackMiner
         // frame 1 : current ( getValues )
         // frame 2 : getMethodArguments() or getMethodLocals() etc
         // frame 3 : caller
-        Map<String,Object> res = extract(names, 3);
+        Map<String,Object> res = getValues(names, 3);
         return res;
     }
 

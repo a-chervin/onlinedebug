@@ -36,7 +36,6 @@ import com.sun.jdi.connect.IllegalConnectorArgumentsException;
 import com.sun.jdi.request.*;
 import xryusha.onlinedebug.config.ConfigEntry;
 import xryusha.onlinedebug.exceptions.RemoteFieldNotFoundException;
-import xryusha.onlinedebug.runtime.util.AsyncRemoteExecutor;
 import xryusha.onlinedebug.runtime.util.RemoteInstaller;
 import xryusha.onlinedebug.util.Log;
 import xryusha.onlinedebug.exceptions.RemoteClassNotFoundException;
@@ -113,6 +112,20 @@ public class RemoteJVM
      */
     public ConcurrentMap<String,Function<List<ReferenceType>,Boolean>> apply(Configuration configuration) throws Exception
     {
+        List<? super EventRequest> all = new ArrayList();
+        all.addAll(remoteVM.eventRequestManager().accessWatchpointRequests());
+        all.addAll(remoteVM.eventRequestManager().breakpointRequests());
+        all.addAll(remoteVM.eventRequestManager().classPrepareRequests());
+        all.addAll(remoteVM.eventRequestManager().methodEntryRequests());
+        all.addAll(remoteVM.eventRequestManager().methodExitRequests());
+        all.addAll(remoteVM.eventRequestManager().methodExitRequests());
+        System.out.println("-- currently registered breakpoints ---");
+        for(int inx = 0; inx < all.size(); inx++) {
+            System.out.println("    " + all.get(inx));
+        }
+        System.out.println("---------------------------------------");
+
+
         remoteVM.eventRequestManager().deleteAllBreakpoints();
         for(ConfigEntry configEntry : configuration.getEntries()) {
             apply(configEntry);

@@ -86,6 +86,8 @@
 
   <xs:element name="or" type="or"/>
 
+  <xs:element name="location" type="locationCondition"/>
+
   <xs:element name="print" type="print"/>
 
   <xs:element name="ref" type="ref"/>
@@ -362,6 +364,7 @@
       <xs:element ref="equal"/>
       <xs:element ref="less"/>
       <xs:element ref="isnull"/>
+      <xs:element ref="location"/>
     </xs:choice>
   </xs:complexType>
 
@@ -450,6 +453,18 @@
         <xs:sequence>
           <xs:element name="value" type="rValue" minOccurs="0"/>
         </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+
+  <xs:complexType name="locationCondition">
+    <xs:complexContent>
+      <xs:extension base="abstractConditionSpec">
+        <xs:sequence/>
+        <xs:attribute name="class" type="xs:string" use="required"/>
+        <xs:attribute name="method" type="xs:string" use="optional"/>
+        <xs:attribute name="line" type="xs:int" use="optional"/>
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>

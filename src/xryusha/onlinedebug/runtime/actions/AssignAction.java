@@ -96,6 +96,15 @@ public class AssignAction extends Action<AssignSpec>
             return nowwrap;
         } // if normal path
 
+        // RefPath with class and var, static var
+        //-----------------------
+        if ( fieldPath.getType() != null ) {
+            ClassType type = (ClassType) super.getClass(thread, fieldPath.getType());
+            WrappedValueSetter wrap = getForStatic(type, fieldPath.getValue());
+            return wrap;
+        }
+
+        //
         // no path, just variable name, i.e. it's a
         // local, static of current class or this instance variable
         //-----------
@@ -107,10 +116,12 @@ public class AssignAction extends Action<AssignSpec>
                                         StackFrame frame = t.frame(0);
                                         frame.setValue(local, v);
                                      };
+            WrappedValueSetter cachedWrap = new WrappedValueSetter(toBeCached, local.type());
+            valueSetterRef.set(cachedWrap);
+
             ValueSetter toBeUsedNow = (t,v) -> curFrame.setValue(local, v);
-            WrappedValueSetter wrap = new WrappedValueSetter(toBeUsedNow, local.type());
-            valueSetterRef.set(wrap);
-            return wrap ;
+            WrappedValueSetter nowwrap = new WrappedValueSetter(toBeUsedNow, local.type());
+            return nowwrap;
         } // if local
 
         ClassType ownerClazz = (ClassType)curFrame.location().declaringType();
@@ -123,8 +134,7 @@ public class AssignAction extends Action<AssignSpec>
         }
 
         if ( thiis == null ) { // static field
-            ValueSetter toBeCached = (t,v)->ownerClazz.setValue(field, v);
-            WrappedValueSetter wrap = new WrappedValueSetter(toBeCached, field.type());
+            WrappedValueSetter wrap = getForStatic(ownerClazz, fieldPath.getValue());
             valueSetterRef.set(wrap);
             return wrap;
         }
@@ -136,10 +146,24 @@ public class AssignAction extends Action<AssignSpec>
         WrappedValueSetter wrap = new WrappedValueSetter(toBeCached, field.type());
         valueSetterRef.set(wrap);
         ValueSetter toBeUsedNow = (t,v)->thiis.setValue(field, v);
-        WrappedValueSetter nowwrap = new WrappedValueSetter(toBeUsedNow, field.type());
-        return nowwrap;
+        WrappedValueSetter toBeUsedNowWrap = new WrappedValueSetter(toBeUsedNow, field.type());
+        return toBeUsedNowWrap;
     } // buildCache
 
+    private WrappedValueSetter getForStatic(ClassType ownerClazz, String fieldName) throws Exception
+    {
+        Field field = ownerClazz.fieldByName(fieldName);
+        if ( field == null ) {
+            String msg = "Field " + fieldName + " not found on class " + ownerClazz.name();
+            log.severe(msg);
+            throw new RemoteDataAccessException(msg, normalizedTargetPath);
+        }
+
+        ValueSetter toBeCached = (t,v)->ownerClazz.setValue(field, v);
+        WrappedValueSetter wrap = new WrappedValueSetter(toBeCached, field.type());
+        valueSetterRef.set(wrap);
+        return wrap;
+    } // getForStatic
 
     static class WrappedValueSetter
     {

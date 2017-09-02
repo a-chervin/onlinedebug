@@ -38,7 +38,7 @@ import xryusha.onlinedebug.runtime.SyntheticRValue;
  */
 public class ConditionEvaluator extends RemotingBase
 {
-    private  Map<Class, BiPredicate<ThreadReference, AbstractConditionSpec>> evaluators;
+    private  Map<Class<? extends AbstractConditionSpec>, BiPredicate<ThreadReference, AbstractConditionSpec>> evaluators;
     private  List<RValue> comparableCompareChain;
 
 
@@ -52,6 +52,7 @@ public class ConditionEvaluator extends RemotingBase
         evaluators.put(EqualsConditionSpec.class, this::evaluateEquals);
         evaluators.put(LessConditionSpec.class, this::evaluateLess);
         evaluators.put(IsNullConditionSpec.class, this::evaluateIsNull);
+        evaluators.put(AtLocationConditionSpec.class, this::evaluateLocation);
         comparableCompareChain = constructCompareCall();
     }
 
@@ -220,6 +221,50 @@ public class ConditionEvaluator extends RemotingBase
             throw new RuntimeException(ex);
         }
     } // evaluateEquals
+
+
+    private boolean evaluateLocation(ThreadReference threadReference, AbstractConditionSpec locationSpec)
+    {
+        AtLocationConditionSpec location = (AtLocationConditionSpec)locationSpec;
+        String targetClass = location.getInClass();
+        String method = location.getMethod();
+        Integer line = location.getLine();
+
+        try {
+            Location currLocation = threadReference.frame(0).location();
+            ReferenceType clazz = currLocation.declaringType();
+            String name = clazz.name();
+            boolean match =
+                    targetClass.endsWith("*") ?
+                             name.startsWith(targetClass.substring(0,targetClass.length()-1)) :
+                                 name.equals(targetClass);
+            if ( !match ) {
+                log.fine(()->"location spec name of" + location + " did not match " + currLocation);
+                return false;
+            }
+
+            if ( method != null ) {
+                match = currLocation.method().name().equals(method);
+                if (!match) {
+                    log.fine(()->"location spec method of " + location + " did not match " + currLocation);
+                    return false;
+                }
+            } // if method
+            if ( line != null ) {
+                match = line.intValue() == currLocation.lineNumber();
+                if (!match) {
+                    log.fine(()->"location spec line of " + location + " did not match " + currLocation);
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception ex) {
+            log.log(Level.SEVERE, "Evaluation failed for " + location, ex);
+            log.throwing(getClass().getName(), "evaluateLocation", ex);
+            throw new RuntimeException(ex);
+        }
+    } // evaluateLocation
+
 
     /**
      * Constructs a.compareTo(b) call template

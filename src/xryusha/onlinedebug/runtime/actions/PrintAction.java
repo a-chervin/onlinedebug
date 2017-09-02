@@ -44,9 +44,13 @@ import xryusha.onlinedebug.runtime.SyntheticRValue;
 
 public class PrintAction extends Action<PrintSpec>
 {
+    public static final String RUN_SYNC = "action.print.sync";
+
     private final static Object remotePrinterCreationLock = new Object();
     private final static Map<String,Ref> remoteAppender = new ConcurrentHashMap<>();
     private static Ref remotePrintingDispatcher = null;
+    private static boolean useSync =
+                       Boolean.valueOf(System.getProperty(RUN_SYNC)).booleanValue();
 
     private static volatile Boolean isAsyncWriterInstalled;
     private static SyntheticRValue printfFormatRValue;
@@ -102,7 +106,7 @@ public class PrintAction extends Action<PrintSpec>
         try {
             if ( isAsyncWriterInstalled == null ) {
                 boolean installed = installer.install(thread, Arrays.asList(AsyncWriterDispatcher.class ));
-                if ( installed )
+                if ( installed && !useSync )
                     remotePrintingDispatcher = createAsyncWriter(thread);
                 isAsyncWriterInstalled = Boolean.valueOf(installed);
                 log.log(Level.INFO, "remote AsyncWriter installed {1}", installed);
@@ -119,6 +123,7 @@ public class PrintAction extends Action<PrintSpec>
         ThreadReference thread = event.thread();
         StringBuilder formatSB = new StringBuilder();
         List<LazyValueHolder> data = collectData(thread, ctx, formatSB);
+        formatSB.append("\n");
         String format = formatSB.toString();
         // if remote logging was enabled and message was
         // already formatted remotely, we can use the
@@ -207,7 +212,7 @@ public class PrintAction extends Action<PrintSpec>
             return writer;
 
         synchronized (remotePrinterCreationLock) {
-            if ( remoteAppender.get(remoteFile ) == null ) {
+            if ( (writer=remoteAppender.get(remoteFile )) == null ) {
                 writer = createSyncWriter(thread);
                 remoteAppender.put(remoteFile, writer);
             } // inner if
@@ -274,12 +279,7 @@ public class PrintAction extends Action<PrintSpec>
 
         CallSpec call = new CallSpec();
         call.setMethod("printf");
-        printfFormatRValue = new SyntheticRValue(true);
-        printfFormatRValue.setType(String.class.getName());
         call.getParams().add(printfFormatRValue);
-
-        printfArgsRValue = new SyntheticRValue();
-        printfArgsRValue.setType(Object[].class.getCanonicalName());
         call.getParams().add(printfArgsRValue);
 
         refChain.getRef().add(call);
@@ -607,7 +607,7 @@ public class PrintAction extends Action<PrintSpec>
             final String message = String.format(format, args);
             final Future future = appender.submit(new Callable<Void>() {
                                                 public Void call() throws Exception {
-                                                    target.println(message) ;
+                                                    target.print(message) ;
                                                     return null;
                                                 }
                                             });

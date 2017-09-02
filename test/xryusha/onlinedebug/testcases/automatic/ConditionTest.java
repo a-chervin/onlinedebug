@@ -4,6 +4,7 @@ import xryusha.onlinedebug.testcases.AutomaticTestcaseBase;
 import xryusha.onlinedebug.testcases.condition.comparison.ComparisonCondition;
 import xryusha.onlinedebug.testcases.condition.grouping.ComplexCondition;
 import org.junit.Test;
+import xryusha.onlinedebug.testcases.condition.location.ExceptionLocation;
 
 
 public class ConditionTest extends AutomaticTestcaseBase
@@ -76,5 +77,33 @@ public class ConditionTest extends AutomaticTestcaseBase
     {
         runTest(ComplexCondition.class,
                 "NestedGroupCondition.xml", "NestedGroupCondition.txt");
+    } //
+
+    @Test
+    public void locationConditionTestClassExact() throws Exception
+    {
+        runTest(ExceptionLocation.class,
+                "ExceptionLocation_ClassExact.xml", "ExceptionLocation_ClassExact.txt");
+    } //
+
+    @Test
+    public void locationConditionTestClassPrefix() throws Exception
+    {
+        runTest(ExceptionLocation.class,
+                "ExceptionLocation_ClassStartsWith.xml", "ExceptionLocation_ClassStartsWith.txt");
+    } //
+
+    @Test
+    public void locationConditionTestInMethod() throws Exception
+    {
+        runTest(ExceptionLocation.class,
+                "ExceptionLocation_InMethod.xml", "ExceptionLocation_InMethod.txt");
+    } //
+
+    @Test
+    public void locationConditionTestInLine() throws Exception
+    {
+        runTest(ExceptionLocation.class,
+                "ExceptionLocation_InLine.xml", "ExceptionLocation_InLine.txt");
     } //
 }

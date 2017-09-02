@@ -181,6 +181,8 @@ public abstract class AutomaticTestcaseBase
             proc.destroyForcibly();
             throw new Exception("failed to attach");
         }
+        // disable async log printing on remote vm
+        System.setProperty("action.print.sync", "true");
         ConcurrentMap<String,Function<List<ReferenceType>,Boolean>> postponedRegistrations = jvm.apply(config);
         EventsProcessor handler = new EventsProcessor(jvm.getRemoteVM(), config, postponedRegistrations);
         onStart(handler, jvm, config);
