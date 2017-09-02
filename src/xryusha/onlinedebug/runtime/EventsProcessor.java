@@ -151,7 +151,7 @@ public class EventsProcessor
                             // previous event handling on this thread is not terminated yet, which means that
                             // the event was fired by event processing itself. Potentially deadlock condition.
                             EventProcessingEntry beinfin = beingProcessed;
-                            StringBuffer sb = new StringBuffer();
+                            StringBuilder sb = new StringBuilder();
                             sb.append("\n=======================================================\n")
                               .append("*  WARNING: handlePendingEvents: retrieved event         *\n")
                               .append("*   ").append(eventProcessingEntry.event).append(" *\n")
