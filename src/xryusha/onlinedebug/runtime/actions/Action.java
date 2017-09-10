@@ -66,4 +66,7 @@ public abstract class Action<T extends ActionSpec> extends RemotingBase
     }
 
     public abstract void execute(LocatableEvent event, ExecutionContext ctx) throws Exception;
+
+    public void shutdown()
+    {}
 }

@@ -109,18 +109,28 @@ public abstract class AutomaticTestcaseBase
 
     protected List<List<String>> runTest(Path configFile, Class testFlow) throws Exception
     {
-        Logger log = Logger.getLogger("onlinedebug");
-        log.setLevel(Level.FINE);
-        log.setUseParentHandlers(false);
+        String tmpDir = System.getProperty("java.io.tmpdir") + "/";
+        String pfx = Long.toHexString(System.currentTimeMillis()).toUpperCase();
 
-        File localLog = File.createTempFile("xryusha-"+this.getClass().getSimpleName()+"-local", null);
-        File remoteLog = File.createTempFile("xryusha-"+this.getClass().getSimpleName()+"-remote", null);
+//System.out.println("Expected: " + pfx);
+        String localName = "xryusha_"+pfx+"_local.dat";
+        String localFile = tmpDir + localName;
+        File localLog = new File(localFile);
+
+        String remoteName = "xryusha_"+pfx+"_remote.dat";
+        String remoteFile = tmpDir + remoteName;
+        File remoteLog = new File(remoteFile);
+
+//        File localLog = File.createTempFile("xryusha-"+seed+"-" + this.getClass().getSimpleName()+"-local", null);
+//        File remoteLog = File.createTempFile("xryusha-"+seed+"-" +this.getClass().getSimpleName()+"-remote", null);
         Configuration patchedconfig = this.setupTargetFiles(configFile, localLog.toPath(), remoteLog.toPath());
+//System.out.println("Config: " + patchedconfig);
         runTestProcess(patchedconfig, testFlow);
+
         List<String> localLines = Files.readAllLines(localLog.toPath());
         List<String> remoteLines = Files.readAllLines(remoteLog.toPath());
-        localLog.delete();
-        remoteLog.delete();
+//        localLog.delete();
+//        remoteLog.delete();
         List<List<String>> result = new ArrayList<>(Arrays.asList(localLines, remoteLines));
         return result;
     } // runTest
@@ -166,6 +176,10 @@ public abstract class AutomaticTestcaseBase
 
     private void runTest(Configuration config, int weWaitForRemoteJvm, Process proc, int port) throws Exception
     {
+//Logger log = Logger.getLogger("onlinedebug");
+//log.setLevel(Level.FINE);
+//log.setUseParentHandlers(false);
+//
         InetSocketAddress addr = new InetSocketAddress("localhost", port);
         RemoteJVM jvm = null;
         long starttime = System.currentTimeMillis();
@@ -181,8 +195,8 @@ public abstract class AutomaticTestcaseBase
             proc.destroyForcibly();
             throw new Exception("failed to attach");
         }
-        // disable async log printing on remote vm
-        System.setProperty("action.print.sync", "true");
+// disable async log printing on remote vm
+//System.setProperty("action.print.sync", "true");
         ConcurrentMap<String,Function<List<ReferenceType>,Boolean>> postponedRegistrations = jvm.apply(config);
         EventsProcessor handler = new EventsProcessor(jvm.getRemoteVM(), config, postponedRegistrations);
         onStart(handler, jvm, config);
@@ -204,6 +218,9 @@ public abstract class AutomaticTestcaseBase
         );
         t.start();
         t.join(15000);
+
+        jvm.disconnect();
+
         if ( t.isAlive() ) {
             StackTraceElement[]  stack = t.getStackTrace();
             StringBuilder sb = new StringBuilder();
@@ -245,6 +262,7 @@ public abstract class AutomaticTestcaseBase
                     continue;
                 }
                 childEl.setAttribute("location", PrintSpec.LoggingVM.both.name());
+// TODO : uncomment
                 childEl.setAttribute("localFile", targetLocal);
                 childEl.setAttribute("remoteFile", targetRemote);
             } // for element childs

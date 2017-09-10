@@ -34,7 +34,7 @@ public class HandlerData
     private final List<RuntimeConfig> asReadOnly = Collections.unmodifiableList(configs);
     private final RemoteJVM jvm;
 
-    public HandlerData(RemoteJVM jvm)
+    public  HandlerData(RemoteJVM jvm)
     {
         this.jvm = jvm;
     }

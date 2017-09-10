@@ -116,10 +116,13 @@ public class PrintSpec implements ActionSpec
     @Override
     public String toString()
     {
-        return "PrintSpec{" +
-                "location=" + location +
-                ", params=" + params +
-                '}';
+        final StringBuilder sb = new StringBuilder("PrintSpec{");
+        sb.append("location=").append(location);
+        sb.append(", localLogFile='").append(localLogFile).append('\'');
+        sb.append(", remoteLogFile='").append(remoteLogFile).append('\'');
+        sb.append(", params=").append(params);
+        sb.append('}');
+        return sb.toString();
     }
 
     /**

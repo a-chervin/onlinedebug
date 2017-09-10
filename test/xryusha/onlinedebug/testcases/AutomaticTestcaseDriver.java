@@ -22,6 +22,7 @@ public class AutomaticTestcaseDriver
         Flow flw = flowclazz.newInstance();
         long start = System.currentTimeMillis();
         int available;
+
         while((available=System.in.available()) == 0) {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(500));
             if ( System.currentTimeMillis() - start > wait ) {
@@ -33,11 +34,14 @@ public class AutomaticTestcaseDriver
             log("terminating without flow");
             System.exit(0);
         }
+
         flw.reset();
         log("test flow start");
         flw.call();
         log("test flow completed");
-        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(500));
+
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+//        System.out.println("Pizdec from " + clazz);
         System.exit(0);
     }
     

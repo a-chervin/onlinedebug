@@ -18,10 +18,6 @@
 package xryusha.onlinedebug.runtime.actions;
 
 import java.io.*;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -48,74 +44,55 @@ public class PrintAction extends Action<PrintSpec>
 
     private final static Object remotePrinterCreationLock = new Object();
     private final static Map<String,Ref> remoteAppender = new ConcurrentHashMap<>();
-    private static Ref remotePrintingDispatcher = null;
-    private static boolean useSync =
-                       Boolean.valueOf(System.getProperty(RUN_SYNC)).booleanValue();
+    private final static boolean useSync = Boolean.getBoolean(RUN_SYNC);
 
-    private static volatile Boolean isAsyncWriterInstalled;
-    private static SyntheticRValue printfFormatRValue;
-    private static SyntheticRValue printfArgsRValue;
-    static {
-        printfFormatRValue = new SyntheticRValue();
-        printfFormatRValue.setType(String.class.getName());
-        printfArgsRValue = new SyntheticRValue();
-        printfArgsRValue.setType(Object[].class.getCanonicalName());
-    }
-    private StringReference printfFormat;
-    private String localFile;
-    private String remoteFile;
-    private ArrayType arrayType;
     private final BlockingDeque<ArrayReference> arraysPool = new LinkedBlockingDeque<>();
-    private final long localOffset =
-               ZoneId.systemDefault().getRules().getOffset(LocalDateTime.now()).getTotalSeconds() * 1000;
+    private final Map<Class<? extends RValue>, ValueAccessor> valueAccessors = createValueAccessors();
+    private final String localFile;
+    private final String remoteFile;
+    private final long localOffset = ZoneId.systemDefault().getRules()
+                                           .getOffset(LocalDateTime.now())
+                                           .getTotalSeconds() * 1000;
+    private SyntheticRValue printfFormatRValue;
+    private SyntheticRValue printfArgsRValue;
+    private StringReference printfFormat;
+    private ArrayType arrayType;
+    private Ref remotePrintingDispatcher = null;
+    private volatile Boolean isAsyncWriterInstalled;
 
-
-    private final Map<Class<? extends RValue>, ValueAccessor> valueAccessors =
-        new HashMap<Class<? extends RValue>, ValueAccessor>() {{
-            put(CurrentException.class, (t, ctx, v, h)->{ h.setJdivalue((Value) ctx.getEventSpecificValue(CurrentException.class)); return "s"; });
-            put(ReturnValue.class, (t, ctx, v, h)->{ h.setJdivalue((Value) ctx.getEventSpecificValue(ReturnValue.class)); return "s"; });
-            put(ModificationCurrent.class, (t, ctx, v, h)->{ h.setJdivalue((Value) ctx.getEventSpecificValue(ModificationCurrent.class)); return "s"; });
-            put(ModificationNew.class, (t, ctx, v, h)->{ h.setJdivalue((Value) ctx.getEventSpecificValue(ModificationNew.class)); return "s"; });
-            put(Const.class, (t, ctx, v, h)->{ h.setStrvalue(((Const)v).getValue()); return "s"; });
-            put(PrintSpec.ThreadStack.class, (t, ctx, v, h)->{ h.setStrvalue(stackToString(t)); return "s"; });
-            put(PrintSpec.Dump.class, (t,ctx, v,h)->{ h.setStrvalue(dumpToString(t, (PrintSpec.Dump)v)); return "s"; });
-            put(PrintSpec.ThreadName.class, (t,ctx,v,h)->{ h.setStrvalue(t.name()); return "s"; });
-            put(PrintSpec.ReceiveTime.class, (t,ctx,v,h)->{ h.setStrvalue(toTimeString(ctx.getReceiveTime())); return "s"; });
-            put(Ref.class, (t,ctx,v,h)-> generalRefValueFormatter(t, v, h) );
-        }};
-
-
-    @FunctionalInterface
-    private interface ValueAccessor
-    {
-        String extract(ThreadReference th, ExecutionContext ctx, RValue value, LazyValueHolder targer) throws Exception;
-    }
 
     public PrintAction(ThreadReference thread, PrintSpec actionConfig) throws Exception
     {
         super(actionConfig);
         localFile = makeInternal(actionConfig.getLocalLogFile());
+        remoteFile = makeInternal(actionConfig.getRemoteLogFile());
+
+        printfFormatRValue = new SyntheticRValue();
+        printfFormatRValue.setType(String.class.getName());
+        printfArgsRValue = new SyntheticRValue();
+        printfArgsRValue.setType(Object[].class.getCanonicalName());
 
         if ( !shouldPrintRemote(actionConfig.getLocation()) )
             return;
 
-        remoteFile = makeInternal(actionConfig.getRemoteLogFile());
         arrayType = (ArrayType) getClass(thread, Object[].class.getCanonicalName());
 
         RemoteInstaller installer = RemoteInstaller.getInstance();
         try {
             if ( isAsyncWriterInstalled == null ) {
-                boolean installed = installer.install(thread, Arrays.asList(AsyncWriterDispatcher.class ));
+                boolean installed =
+                  installer.install(thread, Arrays.asList(AsyncWriterDispatcher.class ));
                 if ( installed && !useSync )
-                    remotePrintingDispatcher = createAsyncWriter(thread);
-                isAsyncWriterInstalled = Boolean.valueOf(installed);
-                log.log(Level.INFO, "remote AsyncWriter installed {1}", installed);
+                  remotePrintingDispatcher =
+                     createRemoteAsyncPrinter(thread, remoteFile, printfFormatRValue, printfArgsRValue);
+                isAsyncWriterInstalled = Boolean.valueOf(remotePrintingDispatcher != null);
+                log.log(Level.INFO, "remote AsyncWriter installed {0}", installed);
             }
         } catch (Throwable ex) {
             log.log(Level.SEVERE, "running in synchronous mode as remote AsyncWriter installing failed", ex);
             isAsyncWriterInstalled = Boolean.FALSE;
         }
-    }
+    } // ctor
 
     @Override
     public void execute(LocatableEvent event, ExecutionContext ctx) throws Exception
@@ -132,9 +109,46 @@ public class PrintAction extends Action<PrintSpec>
         String remotelyEvaluated = null;
         if ( shouldPrintRemote(spec.getLocation()))
             remotelyEvaluated = printRemote(thread, data, format);
-        if ( shouldPrintLocal(spec.getLocation()))
-           printLocal(thread, data, format, remotelyEvaluated);
+        if ( shouldPrintLocal(spec.getLocation())) {
+//System.out.println("Received from remote: " + remotelyEvaluated);
+            printLocal(thread, data, format, remotelyEvaluated);
+        }
     } // execute
+
+    @Override
+    public void shutdown()
+    {
+        super.shutdown();
+        remoteAppender.clear();
+        AsyncWriterDispatcher.shutdown();
+        printfFormat = null;
+        printfFormatRValue = null;
+        printfArgsRValue = null;
+    }
+
+    private String makeInternal(String loc) throws IOException
+    {
+        if ( loc != null ) loc = loc.trim();
+        if ( loc != null && !"".equals(loc))
+            loc = new File(loc).getCanonicalFile().toURI().getPath();
+        if ( loc == null )
+            loc = "";
+        loc = loc.intern();
+        return loc;
+    } // makeInternal
+
+    private boolean shouldPrintLocal(PrintSpec.LoggingVM location)
+    {
+        return location == PrintSpec.LoggingVM.local ||
+                location == PrintSpec.LoggingVM.both ;
+    }
+
+    private boolean shouldPrintRemote(PrintSpec.LoggingVM location)
+    {
+        return location == PrintSpec.LoggingVM.remote ||
+                location == PrintSpec.LoggingVM.both ;
+    }
+
 
     private String printRemote(ThreadReference thread, List<LazyValueHolder> values, String format) throws Exception
     {
@@ -146,9 +160,12 @@ public class PrintAction extends Action<PrintSpec>
             arrayWasJustCreated = true;
         }
 
-        if ( printfFormat == null ) // threadsafe as it is just a caching of same format value
+        // threadsafe is irrelevant here as it is just a
+        // caching of same format value,
+        // overridden by another thread in worth case
+        if ( printfFormat == null )
             printfFormat = thread.virtualMachine().mirrorOf(format);
-
+//System.out.println("FORMAT: " + printfFormat);
         for(int inx = 0; inx <values.size(); inx++) {
             RValue rval = this.spec.getParams().get(inx);
             LazyValueHolder holder = values.get(inx);
@@ -167,10 +184,16 @@ public class PrintAction extends Action<PrintSpec>
 
         printfFormatRValue.setValue(printfFormat);
         printfArgsRValue.setValue(array);
-        Ref writer = getCreatePrintChain(thread);
+//System.out.println("Sendigg format: " + printfFormatRValue.getValue()
+//                   +" value: " + printfArgsRValue.getValue());
+        Ref writer = getCreatePrintChain(thread,remoteFile, printfFormatRValue, printfArgsRValue);
         Value result = null;
         try {
             result = getValue(thread, writer);
+//} catch(Exception ex) {
+//System.err.println("::"+writer);
+//ex.printStackTrace();
+//throw ex;
         } finally {
             arraysPool.add(array);
         }
@@ -178,6 +201,7 @@ public class PrintAction extends Action<PrintSpec>
             return ((StringReference)result).value();
         return null;
     } // printRemote
+
 
     private void printLocal(ThreadReference thread, List<LazyValueHolder> data, String format, String alreadyEvaluated) throws Exception
     {
@@ -200,39 +224,6 @@ public class PrintAction extends Action<PrintSpec>
         AsyncWriterDispatcher.submit(localFile, format, args);
     } // printLocal
 
-    private Ref getCreatePrintChain(ThreadReference thread) throws Exception
-    {
-        if ( remotePrintingDispatcher != null )
-            return remotePrintingDispatcher;
-
-        // for some reason async was not uploaded,
-        // going to use synchronous log file writing
-        Ref writer = remoteAppender.get(remoteFile);
-        if ( writer != null )
-            return writer;
-
-        synchronized (remotePrinterCreationLock) {
-            if ( (writer=remoteAppender.get(remoteFile )) == null ) {
-                writer = createSyncWriter(thread);
-                remoteAppender.put(remoteFile, writer);
-            } // inner if
-        } // synch
-        return writer;
-    } // getCreatePrintChain
-
-    private Ref createAsyncWriter(ThreadReference thread) throws Exception
-    {
-        boolean canWrite = verifyCanWrite(thread, remoteFile);
-        if ( !canWrite )
-            throw new IllegalArgumentException("can't write remote file " + remoteFile);
-
-        CallSpec call = new CallSpec(AsyncWriterDispatcher.class.getName(), "submit");
-        call.setMethod("submit");
-        call.getParams().add(new Const(remoteFile, String.class.getName()));
-        call.getParams().add(printfFormatRValue);
-        call.getParams().add(printfArgsRValue);
-        return call;
-    } // createAsyncWriter
 
     private boolean verifyCanWrite(ThreadReference thread, String file) throws Exception
     {
@@ -257,16 +248,62 @@ public class PrintAction extends Action<PrintSpec>
         writableParentChain.getRef().add(new CallSpec(null, "canWrite"));
         can = (BooleanValue) getValue(thread, writableParentChain);
         return can.booleanValue();
-    }
+    } // verifyCanWrite
 
-    private Ref createSyncWriter(ThreadReference thread) throws Exception
+
+    private Ref getCreatePrintChain(ThreadReference thread, String path,
+                                    SyntheticRValue  format, SyntheticRValue  arrayData) throws Exception
+    {
+        if ( remotePrintingDispatcher != null ) {
+//System.err.println("***Dispather used");
+            return remotePrintingDispatcher;
+        }
+//System.err.println("***Sync used");
+        // for some reason async was not uploaded,
+        // going to use synchronous log file writing
+        Ref writer = remoteAppender.get(path/*remoteFile*/);
+        if ( writer != null )
+            return writer;
+
+        synchronized (remotePrinterCreationLock) {
+            if ( (writer=remoteAppender.get(path/*remoteFile*/ )) == null ) {
+                writer = createRemoteSyncPrinter(thread,path,format,arrayData);
+                remoteAppender.put(path/*remoteFile*/, writer);
+            } // inner if
+        } // synch
+        return writer;
+    } // getCreatePrintChain
+
+
+    private Ref createRemoteAsyncPrinter(ThreadReference thread,
+                                         String path,
+                                         SyntheticRValue format,
+                                         SyntheticRValue data) throws Exception
+    {
+        boolean canWrite = verifyCanWrite(thread, path);
+        if ( !canWrite )
+            throw new IllegalArgumentException("can't write remote file " + remoteFile);
+
+        CallSpec call = new CallSpec(AsyncWriterDispatcher.class.getName(), "submit");
+        call.setMethod("submit");
+        call.getParams().add(new Const(path, String.class.getName()));
+        call.getParams().add(format);
+        call.getParams().add(data);
+        return call;
+    } // createRemoteAsyncPrinter
+
+
+    private Ref createRemoteSyncPrinter(ThreadReference thread,
+                                        String path,
+                                        SyntheticRValue format,
+                                        SyntheticRValue data) throws Exception
     {
         ObjectReference printStream;
 
-        LogTarget targetType = LogTarget.getTarget(remoteFile);
+        LogTarget targetType = LogTarget.getTarget(path);
         switch (targetType) {
             case FILE:
-               printStream = createRemotePrinter(thread);
+               printStream = createRemotePrintStream(thread, path);
                break;
             default:
                 printStream = (ObjectReference)
@@ -279,30 +316,31 @@ public class PrintAction extends Action<PrintSpec>
 
         CallSpec call = new CallSpec();
         call.setMethod("printf");
-        call.getParams().add(printfFormatRValue);
-        call.getParams().add(printfArgsRValue);
+        call.getParams().add(format);
+        call.getParams().add(data);
 
         refChain.getRef().add(call);
         return refChain;
-    } // createSyncWriter
+    } // createRemoteSyncPrinter
 
 
-    private ObjectReference createRemotePrinter(ThreadReference thread) throws Exception
+    private ObjectReference createRemotePrintStream(ThreadReference thread, String path) throws Exception
     {
+        Const _true = new Const(Boolean.TRUE.toString(), boolean.class.getName());
         Constructor fos = new Constructor(FileOutputStream.class.getName());
-        fos.getParams().add(new Const(remoteFile, String.class.getName()));
-        fos.getParams().add(new Const(Boolean.TRUE.toString(), boolean.class.getName()));
-        fos.setType(OutputStream.class.getName());
+        fos.getParams().add(new Const(path/*remoteFile*/, String.class.getName()));
+        fos.getParams().add(_true);
+
         Constructor bos = new Constructor(BufferedOutputStream.class.getName());
         bos.getParams().add(fos);
-        bos.setType(OutputStream.class.getName());
+
         Constructor newpos = new Constructor(PrintStream.class.getName());
         newpos.getParams().add(bos);
-        newpos.getParams().add(new Const(Boolean.TRUE.toString()));
+        newpos.getParams().add(_true);
         ObjectReference printstream = (ObjectReference) getValue(thread, newpos);
         printstream.disableCollection();
         return printstream;
-    } // createRemotePrinter
+    } // createRemotePrintStream
 
 
     private List<LazyValueHolder> collectData(ThreadReference thread, ExecutionContext ctx, StringBuilder formatBuilder) throws Exception
@@ -341,6 +379,7 @@ public class PrintAction extends Action<PrintSpec>
         return format;
     } // generalRefValueFormatter
 
+
     private String stackToString(ThreadReference thread) throws IncompatibleThreadStateException
     {
         List<StackFrame> frames = thread.frames();
@@ -356,44 +395,14 @@ public class PrintAction extends Action<PrintSpec>
     } // stackToString
 
 
+    class Line { String name, type; Value value; }
+
+
     private String dumpToString(ThreadReference thread, PrintSpec.Dump arg) throws Exception
     {
         StackFrame frame = thread.frame(0);
         StringBuilder sb = new StringBuilder();
-        class Line { String name, type; Value value; }
-        BiConsumer<String,List<Line>> append2Buffer = (title,lv)-> {
-            sb.append("--- ").append(title).append(" args --- ");
-            boolean first = true;
-            for(Line line: lv) {
-                String name = line.name;
-                String type = line.type;
-                Value value = line.value;
-                if ( type == null && value!= null )
-                    type = value.type().name();
-                if ( type == null )
-                    type = "unaccessible";
-                sb.append(System.lineSeparator())
-                  .append("  ")
-                  .append(name)
-                  .append(": ")
-                  .append(type)
-                  .append(": ");
-                try {
-                    String asString = value != null ? this.toString(thread, value) : "null";
-                    boolean string = type.equals(String.class.getName()) && value != null;
-                    if ( string )
-                        sb.append('"');
-                    sb.append(asString);
-                    if ( string )
-                        sb.append('"');
-                } catch (Throwable th) {
-                    sb.append("::failed to obtain value: ")
-                      .append(th);
-                }
-            } // for vars
-            sb.append(System.lineSeparator())
-              .append("------------------- ");
-        }; // Consumer<List>
+
         if ( arg.getSource().contains(PrintSpec.Dump.DumpSource.args)) {
             List<Value> args = frame.getArgumentValues();
             if ( args.size() > 0 ) {
@@ -406,7 +415,7 @@ public class PrintAction extends Action<PrintSpec>
                     line.type =  types.get(inx);
                     result.add(line);
                 }
-                append2Buffer.accept("method", result);
+                append2Buffer(thread, "method", result, sb);
             }
         } // args
         if ( arg.getSource().contains(PrintSpec.Dump.DumpSource.visible)) {
@@ -423,12 +432,48 @@ public class PrintAction extends Action<PrintSpec>
                     line.value = frame.getValue(lvar);
                     reslist.add(line);
                 } // for lvars
-                append2Buffer.accept("visible", reslist);
+                append2Buffer(thread, "visible", reslist, sb);
             } // if size > 0
-        }
+        } // if DumpSource.visible
         String res = sb.toString();
         return res;
     } // dumpToString
+
+
+    private void append2Buffer(ThreadReference thread, String title, List<Line> data, StringBuilder buffer)
+    {
+        buffer.append("--- ").append(title).append(" args --- ");
+        boolean first = true;
+        for(Line line: data) {
+            String name = line.name;
+            String type = line.type;
+            Value value = line.value;
+            if ( type == null && value!= null )
+                type = value.type().name();
+            if ( type == null )
+                type = "unaccessible";
+            buffer.append(System.lineSeparator())
+                    .append("  ")
+                    .append(name)
+                    .append(": ")
+                    .append(type)
+                    .append(": ");
+            try {
+                String asString = value != null ? this.toString(thread, value) : "null";
+                boolean string = type.equals(String.class.getName()) && value != null;
+                if ( string )
+                    buffer.append('"');
+                buffer.append(asString);
+                if ( string )
+                    buffer.append('"');
+            } catch (Throwable th) {
+                buffer.append("::failed to obtain value: ")
+                        .append(th);
+            }
+        } // for vars
+        buffer.append(System.lineSeparator())
+                .append("------------------- ");
+    } // append2Buffer
 
     private String toTimeString(long time)
     {
@@ -474,27 +519,63 @@ public class PrintAction extends Action<PrintSpec>
         sb.append(value);
     }
 
-    private boolean shouldPrintLocal(PrintSpec.LoggingVM location)
+    private  Map<Class<? extends RValue>, ValueAccessor> createValueAccessors()
     {
-        return location == PrintSpec.LoggingVM.local ||
-                location == PrintSpec.LoggingVM.both ;
-    }
+        return new HashMap<Class<? extends RValue>, ValueAccessor>() {{
+            put(CurrentException.class,
+                 (t, ctx, v, h)->{
+                     h.setJdivalue((Value) ctx.getEventSpecificValue(CurrentException.class));
+                     return "s";
+                   });
+            put(ReturnValue.class,
+                 (t, ctx, v, h)-> {
+                     h.setJdivalue((Value) ctx.getEventSpecificValue(ReturnValue.class));
+                     return "s";
+                 });
+            put(ModificationCurrent.class,
+                (t, ctx, v, h)->{
+                    h.setJdivalue((Value) ctx.getEventSpecificValue(ModificationCurrent.class));
+                    return "s";
+                });
+            put(ModificationNew.class,
+                (t, ctx, v, h)->{
+                    h.setJdivalue((Value) ctx.getEventSpecificValue(ModificationNew.class));
+                    return "s";
+                });
+            put(Const.class,
+                    (t, ctx, v, h)->{
+                     h.setStrvalue(((Const)v).getValue());
+                     return "s";
+                    });
+            put(PrintSpec.ThreadStack.class,
+                (t, ctx, v, h)-> {
+                    h.setStrvalue(stackToString(t));
+                    return "s";
+                });
+            put(PrintSpec.Dump.class,
+                (t,ctx, v,h)->{
+                    h.setStrvalue(dumpToString(t, (PrintSpec.Dump)v));
+                    return "s";
+                });
+            put(PrintSpec.ThreadName.class,
+                (t,ctx,v,h)->{
+                    h.setStrvalue(t.name());
+                    return "s";
+                });
+            put(PrintSpec.ReceiveTime.class,
+                    (t,ctx,v,h)->{
+                        h.setStrvalue(toTimeString(ctx.getReceiveTime()));
+                        return "s";
+                    });
+            put(Ref.class,
+                    (t,ctx,v,h)-> generalRefValueFormatter(t, v, h) );
+        }};
+    } // createValueAccessors
 
-    private boolean shouldPrintRemote(PrintSpec.LoggingVM location)
+    @FunctionalInterface
+    private interface ValueAccessor
     {
-        return location == PrintSpec.LoggingVM.remote ||
-                location == PrintSpec.LoggingVM.both ;
-    }
-
-    private String makeInternal(String loc) throws IOException
-    {
-        if ( loc != null ) loc = loc.trim();
-        if ( loc != null && !"".equals(loc))
-            loc = new File(loc).getCanonicalFile().toURI().getPath();
-        if ( loc == null )
-            loc = "";
-        loc = loc.intern();
-        return loc;
+        String extract(ThreadReference th, ExecutionContext ctx, RValue value, LazyValueHolder targer) throws Exception;
     }
 
     // avoiding non-necessary string->value convertion
@@ -545,10 +626,20 @@ public class PrintAction extends Action<PrintSpec>
 
     public static class AsyncWriterDispatcher
     {
+        static {
+            Runtime.getRuntime().addShutdownHook( new Thread() {
+                                                    public synchronized void start() {
+                                                        shutdown();
+                                                    }}
+                                                );
+        }
         private static ConcurrentMap<String,AsyncWriter> writers = new ConcurrentHashMap<>();
 
         public static String submit(String path, String format, Object[] args) throws Exception
         {
+//System.err.println("Submit: path<" + path + ">\n"+
+//                   " format < " + format + ">\n"+
+//                   " args <" + Arrays.toString(args)+">");
             AsyncWriter wr = writers.get(path);
             // not using lambda or writers.computeIfAbsent
             // to make it run on remote 1.7 as well
@@ -563,14 +654,27 @@ public class PrintAction extends Action<PrintSpec>
             } // eof if outer wr == null
             return wr.submit(format, args);
         } // submit
+
+        public static void shutdown()
+        {
+            for(AsyncWriter writer: writers.values() ) {
+                try {
+                    writer.shutdown();
+                } catch(Throwable th) {
+                    th.printStackTrace();
+                }
+            }
+            writers.clear();
+        } // disconnect
     } // AsyncWriterDispatcher
+
 
     public static class AsyncWriter implements ThreadFactory
     {
         private final PrintStream target;
         private final ExecutorService appender;
         private final ExecutorService verifier;
-        private static boolean f;
+        private final String targetPath;
 
         public static AsyncWriter newInstance(String targetPath) throws IOException
         {
@@ -579,6 +683,7 @@ public class PrintAction extends Action<PrintSpec>
 
         private AsyncWriter(String targetPath) throws IOException
         {
+            this.targetPath = targetPath;
             LogTarget logTarget = LogTarget.getTarget(targetPath);
             switch ( logTarget ) {
                 case STDOUT:
@@ -588,12 +693,7 @@ public class PrintAction extends Action<PrintSpec>
                     this.target = System.err;
                     break;
                 default:
-                    Path path = new File(targetPath).toPath();
-                    FileChannel file = FileChannel.open(path,
-                            StandardOpenOption.CREATE,
-                            StandardOpenOption.APPEND,
-                            StandardOpenOption.WRITE);
-                    OutputStream os = Channels.newOutputStream(file);
+                    FileOutputStream os = new FileOutputStream(targetPath, true);
                     this.target = new PrintStream(os, true);
             } // switch
 
@@ -607,7 +707,8 @@ public class PrintAction extends Action<PrintSpec>
             final String message = String.format(format, args);
             final Future future = appender.submit(new Callable<Void>() {
                                                 public Void call() throws Exception {
-                                                    target.print(message) ;
+                                                    target.print(message);
+                                                    target.flush();
                                                     return null;
                                                 }
                                             });
@@ -629,6 +730,14 @@ public class PrintAction extends Action<PrintSpec>
                     } // Runnable
                    );
             return message;
+        } // submit
+
+        public void shutdown()
+        {
+            appender.shutdownNow();
+            verifier.shutdownNow();
+            target.flush();
+            target.close();
         }
 
         @Override

@@ -43,7 +43,7 @@ public class EventsProcessor
     public final static String HANDLER_DATA_PN = "handlerData";
     private final static int MAX_INITIALIZATION_ATTEMPTS = 5;
     private final static Logger log = Log.getLogger();
-    private final static AtomicInteger asyncInitializationAttempts = new AtomicInteger(0);
+    private final AtomicInteger asyncInitializationAttempts = new AtomicInteger(0);
     private final VirtualMachine virtualMachine;
     private final ConcurrentMap<String,Function<List<ReferenceType>,Boolean>> postponedRegistrations;
     private final Map<Class<? extends Event>, HandlerCall> eventHandlers = new HashMap<>();
@@ -96,8 +96,6 @@ public class EventsProcessor
                 pending.add(e);
                 log.log(Level.FINE, () -> "handlePendingEvents: retrieved event " + e);
             }
-
-
 
             ThreadReference[] threadHolder = new ThreadReference[1];
             Map<String, List<EventProcessingEntry>> eventGroups =

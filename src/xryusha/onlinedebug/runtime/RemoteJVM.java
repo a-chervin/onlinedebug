@@ -18,6 +18,8 @@
 package xryusha.onlinedebug.runtime;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,6 +38,7 @@ import com.sun.jdi.connect.IllegalConnectorArgumentsException;
 import com.sun.jdi.request.*;
 import xryusha.onlinedebug.config.ConfigEntry;
 import xryusha.onlinedebug.exceptions.RemoteFieldNotFoundException;
+import xryusha.onlinedebug.runtime.actions.Action;
 import xryusha.onlinedebug.runtime.util.RemoteInstaller;
 import xryusha.onlinedebug.util.Log;
 import xryusha.onlinedebug.exceptions.RemoteClassNotFoundException;
@@ -135,8 +138,27 @@ public class RemoteJVM
 
     public void disconnect()
     {
+        for(HandlerData handler : grouppedHandlerData.values() ) {
+            for( HandlerData.RuntimeConfig runtime: handler.getConfig()) {
+                if ( runtime == null || runtime.getActions() == null )
+                    continue;
+                for( Action action: runtime.getActions() ) {
+                    try {
+                        action.shutdown();
+                    } catch(Throwable th) {
+                        StringWriter sw = new StringWriter();
+                        PrintWriter pw = new PrintWriter(sw);
+                        pw.println("Failed to shutdown: " + action);
+                        th.printStackTrace(pw);
+                        pw.flush();
+                        System.err.println(sw);
+                    }
+                }
+            }
+        } // for handlers
         if ( remoteVM == null )
             return;
+        vms.remove(remoteVM);
         log.info("Disconnection from remoteVM gracefully");
         try {
             remoteVM.eventRequestManager().deleteAllBreakpoints();

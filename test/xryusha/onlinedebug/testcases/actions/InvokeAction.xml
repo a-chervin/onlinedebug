@@ -21,7 +21,10 @@
     </entry>
     <entry>
         <atLocation class="xryusha.onlinedebug.testcases.actions.InvokeAction" line="28"/>
-        <print location="both">
+        <print location="both"
+        >
+            <!--remoteFile="c:/_tmp/asyncdebug_remote.log"-->
+            <!--localFile="c:/_tmp/asyncdebug_local.log"-->
             <params>
                 <chain>
                     <ref var="intHolder"/>
